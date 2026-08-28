@@ -1,0 +1,34 @@
+.brand-logo {
+  width: 84px;
+  height: 84px;
+  flex-basis: 84px;
+  border-radius: 12px;
+}
+
+.service-icon {
+  padding: 8px;
+  font-size: 0;
+}
+
+.service-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ubuntu .service-icon {
+  padding: 7px 5px;
+}
+
+.omv .service-icon {
+  padding: 6px;
+}
+
+@media (max-width: 430px) {
+  .brand-logo {
+    width: 72px;
+    height: 72px;
+    flex-basis: 72px;
+  }
+}

@@ -14,14 +14,14 @@ const offlineHealth: HealthPayload = {
 };
 
 const services = {
-  jellyfin: { group: 'Media', name: 'Jellyfin', description: 'Movies, TV & Anime', icon: '🎬', tone: 'jellyfin', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:8096/jelly', remote: 'https://nilavus.whydah-darter.ts.net/jelly', installed: true },
-  qbit: { group: 'Downloads', name: 'qBittorrent', description: 'Downloads', icon: '⬇️', tone: 'qbit', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:8080', remote: 'https://nilavus.whydah-darter.ts.net/qbit/', installed: true },
-  files: { group: 'Files', name: 'File Browser', description: 'NAS Files', icon: '📁', tone: 'files', host: 'nilavus-storage' as NodeName, lan: 'http://192.168.1.81:8081/files/', remote: 'https://nilavus-storage.whydah-darter.ts.net/files/', installed: true },
-  immich: { group: 'Photos', name: 'Immich', description: 'Photos & Videos', icon: '📷', tone: 'immich', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:2283', remote: 'https://nilavus.whydah-darter.ts.net:8443/', installed: true },
-  kavita: { group: 'Library', name: 'Kavita', description: 'Books & Comics', icon: '📚', tone: 'kavita', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:5000/kavita/', remote: 'https://nilavus.whydah-darter.ts.net/kavita/', installed: true },
-  navidrome: { group: 'Music', name: 'Navidrome', description: 'Personal Music', icon: '🎵', tone: 'navidrome', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:4533/navidrome/', remote: 'https://nilavus.whydah-darter.ts.net/navidrome/', installed: true },
-  ubuntu: { group: 'System', name: 'Ubuntu Server', description: 'Laptop Management', icon: '🖥️', tone: 'ubuntu', host: 'nilavus' as NodeName, lan: 'https://192.168.1.72:9090/system', remote: null, installed: true },
-  omv: { group: 'Administration', name: 'OpenMediaVault', description: 'NAS Management', icon: '⚙️', tone: 'omv', host: 'nilavus-storage' as NodeName, lan: 'http://192.168.1.81', remote: null, installed: true },
+  jellyfin: { group: 'Media', name: 'Jellyfin', description: 'Movies, TV & Anime', logo: 'logos/jellyfin.svg', tone: 'jellyfin', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:8096/jelly', remote: 'https://nilavus.whydah-darter.ts.net/jelly', installed: true },
+  qbit: { group: 'Downloads', name: 'qBittorrent', description: 'Downloads', logo: 'logos/qbittorrent.svg', tone: 'qbit', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:8080', remote: 'https://nilavus.whydah-darter.ts.net/qbit/', installed: true },
+  files: { group: 'Files', name: 'File Browser', description: 'NAS Files', logo: 'logos/filebrowser.svg', tone: 'files', host: 'nilavus-storage' as NodeName, lan: 'http://192.168.1.81:8081/files/', remote: 'https://nilavus-storage.whydah-darter.ts.net/files/', installed: true },
+  immich: { group: 'Photos', name: 'Immich', description: 'Photos & Videos', logo: 'logos/immich.svg', tone: 'immich', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:2283', remote: 'https://nilavus.whydah-darter.ts.net:8443/', installed: true },
+  kavita: { group: 'Library', name: 'Kavita', description: 'Books & Comics', logo: 'logos/kavita.svg', tone: 'kavita', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:5000/kavita/', remote: 'https://nilavus.whydah-darter.ts.net/kavita/', installed: true },
+  navidrome: { group: 'Music', name: 'Navidrome', description: 'Personal Music', logo: 'logos/navidrome.png', tone: 'navidrome', host: 'nilavus' as NodeName, lan: 'http://192.168.1.72:4533/navidrome/', remote: 'https://nilavus.whydah-darter.ts.net/navidrome/', installed: true },
+  ubuntu: { group: 'System', name: 'Ubuntu Server', description: 'Laptop Management', logo: 'logos/ubuntu.svg', tone: 'ubuntu', host: 'nilavus' as NodeName, lan: 'https://192.168.1.72:9090/system', remote: null, installed: true },
+  omv: { group: 'Administration', name: 'OpenMediaVault', description: 'NAS Management', logo: 'logos/openmediavault.svg', tone: 'omv', host: 'nilavus-storage' as NodeName, lan: 'http://192.168.1.81', remote: null, installed: true },
 } as const;
 
 const displayUrl = (url: string | null) => url ? url.replace(/^https?:\/\//, '').replace(/\/$/, '') : 'Remote link not configured';
@@ -107,7 +107,7 @@ export default function Home() {
           const liveState = !health ? 'checking' : !node?.online || serviceOnline === false ? 'offline' : serviceOnline ? 'online' : 'checking';
           const badge = !service.installed ? 'Coming soon' : liveState === 'online' ? 'Online' : liveState === 'offline' ? 'Offline' : 'Checking';
           return <article className={`service-card ${service.tone} ${unavailable ? 'disabled' : ''}`} key={key} style={{ '--delay': `${index * 65}ms` } as CSSProperties}>
-            <div className="card-top"><span className="service-icon" aria-hidden="true">{service.icon}</span><span className={`access ${liveState}`}><i />{badge}</span></div>
+            <div className="card-top"><span className="service-icon" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}${service.logo}`} alt="" /></span><span className={`access ${liveState}`}><i />{badge}</span></div>
             <div className="card-copy"><span className="group-label">{service.group}</span><h2>{service.name}</h2><p>{service.description}</p></div>
             <div className="card-bottom"><div className="destination-block"><span className="destination" title={target ?? undefined}>{!service.installed ? 'Not installed' : displayUrl(target)}</span><span className="host-label">Running on <b>{service.host}</b></span></div>{unavailable ? <button className="open-button" type="button" disabled>{!service.installed ? 'Coming soon' : 'Unavailable'}</button> : <a className="open-button" href={target!} aria-label={`Open ${service.name} using ${mode === 'lan' ? 'LAN' : 'Remote'}`}>Open <b>↗</b></a>}</div>
           </article>
