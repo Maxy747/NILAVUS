@@ -247,7 +247,7 @@ export default function Home() {
     <section className="shell">
       <header className="hero">
         <div className="topline">
-          <div className="brand"><button className={`brand-trigger ${logoActive ? 'logo-active' : ''}`} type="button" onClick={animateLogo} aria-label="Animate NILAVUS logo"><img className="brand-logo" src={`${import.meta.env.BASE_URL}nilavus-logo.png`} alt="NILAVUS" /></button><span><small>Personal Server</small></span></div>
+          <div className="brand"><button className={`brand-trigger ${logoActive ? 'logo-active' : ''}`} type="button" onClick={animateLogo} aria-label="Animate NILAVUS logo"><img className="brand-logo" src={`${import.meta.env.BASE_URL}n-logo.png`} alt="NILAVUS" /></button><span className="brand-word">NILAVUS</span></div>
           <div className="node-statuses">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
         </div>
         <div className="hero-copy">

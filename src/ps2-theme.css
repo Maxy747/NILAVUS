@@ -74,6 +74,16 @@ main::before {
   filter: drop-shadow(0 0 12px #4ba9ff45);
 }
 
+.brand-word {
+  color: #eef6ff14;
+  font-size: clamp(19px, 2.3vw, 27px);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: .05em;
+  -webkit-text-stroke: .8px #86bce9c7;
+  text-shadow: 0 0 18px #438cff42;
+}
+
 .brand-trigger:focus-visible {
   outline: 2px solid var(--ps-cyan);
   outline-offset: 5px;
@@ -84,6 +94,10 @@ main::before {
 }
 
 .brand-logo {
+  border-radius: 18%;
+  mix-blend-mode: screen;
+  box-shadow: 0 0 13px #edfaff4f, 0 0 27px #397eff42;
+  filter: brightness(1.12) contrast(1.04);
   transition: filter .3s ease, transform .3s ease;
 }
 
