@@ -115,6 +115,16 @@ main::before {
   backdrop-filter: blur(13px) saturate(125%);
 }
 
+.health-card.offline {
+  border-color: #ff526d73;
+  animation: health-offline-glow 2.4s ease-in-out infinite;
+}
+
+.health-card.online {
+  border-color: #55e89642;
+  animation: health-online-breathe 3.8s ease-in-out infinite;
+}
+
 .connection-panel {
   box-shadow: inset 0 1px 0 #e2fbff1a, 0 16px 45px #00071673, 0 0 22px #287dff12;
 }
@@ -404,6 +414,16 @@ main.offline-world::before {
 @keyframes offline-pulse {
   0%, 100% { box-shadow: inset 0 0 0 #ff173100; }
   50% { box-shadow: inset 0 0 150px #ff173119; }
+}
+
+@keyframes health-offline-glow {
+  0%,100% { box-shadow: inset 0 1px 0 #ffb0bd12, 0 18px 52px #050001a6, 0 0 16px #ff27443b; }
+  50% { box-shadow: inset 0 1px 0 #ffd3da1f, 0 18px 52px #050001a6, 0 0 34px #ff274485; }
+}
+
+@keyframes health-online-breathe {
+  0%,100% { box-shadow: inset 0 1px 0 #d8fff018, 0 18px 52px #00061570, 0 0 9px #55e89620; }
+  50% { box-shadow: inset 0 1px 0 #d8fff025, 0 18px 52px #00061570, 0 0 22px #55e89652; }
 }
 
 @keyframes logo-orbit {
@@ -988,6 +1008,14 @@ body.about-active {
   .brand-trigger.logo-active .brand-logo {
     animation: none;
   }
+
+  .health-card.online,
+  .health-card.offline {
+    animation: none;
+  }
+
+  .health-card.online { box-shadow: inset 0 1px 0 #d8fff018, 0 18px 52px #00061570, 0 0 14px #55e89636; }
+  .health-card.offline { box-shadow: inset 0 1px 0 #ffb0bd12, 0 18px 52px #050001a6, 0 0 22px #ff27445c; }
 
   .about-page {
     animation: none;
