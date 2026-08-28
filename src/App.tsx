@@ -226,7 +226,6 @@ export default function Home() {
 
       <section className="kinetic-signature" aria-label="Nilavus signature">
         <div className="kinetic-word" aria-hidden="true">NILAVUS<sup>®</sup></div>
-        <div className="signature-meta"><span>Private infrastructure</span><span>Made by MoeLustHer</span><span>Secured with Tailscale</span></div>
       </section>
 
       <footer><span>Made by MoeLustHer</span><span>Nilavu Systems</span><span>Secured with Tailscale</span><span>{visitorCount == null ? 'Visitors today —' : `${visitorCount} visitor${visitorCount === 1 ? '' : 's'} today`}</span></footer>
