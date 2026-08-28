@@ -164,7 +164,7 @@ export default function Home() {
     playSound('click');
     setLogoActive(false);
     window.requestAnimationFrame(() => setLogoActive(true));
-    window.setTimeout(() => setLogoActive(false), 1150);
+    window.setTimeout(() => setLogoActive(false), 1900);
   };
 
   const enterSite = () => {

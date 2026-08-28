@@ -923,7 +923,7 @@ body.about-active {
 
 .brand-trigger { perspective: 700px; }
 .brand-trigger.logo-active .brand-logo {
-  animation: logo-coin-y 1.15s cubic-bezier(.35,.05,.2,1) both;
+  animation: logo-coin-y 1.85s linear both;
   transform-style: preserve-3d;
   backface-visibility: visible;
 }
@@ -968,10 +968,12 @@ body.about-active {
 
 @keyframes logo-coin-y {
   0% { opacity: 1; transform: perspective(700px) rotateY(0deg) scale(1); filter: brightness(1); }
-  24% { opacity: .34; transform: perspective(700px) rotateY(90deg) scale(.92); filter: brightness(2.1) drop-shadow(0 0 15px #78eaff); }
-  50% { opacity: .82; transform: perspective(700px) rotateY(180deg) scale(1.06); filter: brightness(1.45) drop-shadow(0 0 20px #8e74ff); }
-  76% { opacity: .34; transform: perspective(700px) rotateY(270deg) scale(.92); filter: brightness(2.1) drop-shadow(0 0 15px #78eaff); }
-  100% { opacity: 1; transform: perspective(700px) rotateY(360deg) scale(1); filter: brightness(1); }
+  16% { opacity: .62; transform: perspective(700px) rotateY(720deg) scale(.94); filter: brightness(2.05) drop-shadow(0 0 17px #78eaff); }
+  38% { opacity: .78; transform: perspective(700px) rotateY(1220deg) scale(1.04); filter: brightness(1.65) drop-shadow(0 0 22px #8e74ff); }
+  62% { opacity: .9; transform: perspective(700px) rotateY(1390deg) scale(1.02); filter: brightness(1.38) drop-shadow(0 0 17px #78eaff); }
+  80% { opacity: .96; transform: perspective(700px) rotateY(1432deg) scale(1.01); filter: brightness(1.18) drop-shadow(0 0 10px #78eaff); }
+  91% { opacity: 1; transform: perspective(700px) rotateY(1439deg) scale(1.002); filter: brightness(1.06); }
+  100% { opacity: 1; transform: perspective(700px) rotateY(1440deg) scale(1); filter: brightness(1); }
 }
 
 @keyframes about-reveal {
