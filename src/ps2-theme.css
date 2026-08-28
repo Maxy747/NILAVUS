@@ -48,6 +48,11 @@ main::before {
   position: relative;
 }
 
+.kinetic-signature {
+  padding-bottom: clamp(44px, 5vw, 64px);
+  margin-bottom: 38px;
+}
+
 .hero::after {
   content: "";
   position: absolute;
