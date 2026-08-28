@@ -473,6 +473,7 @@ main.site-locked {
 .gateway-content {
   position: relative;
   z-index: 3;
+  isolation: isolate;
   display: flex;
   width: min(82vw, 480px);
   max-height: 92dvh;
@@ -481,12 +482,30 @@ main.site-locked {
   animation: gateway-arrive 1.05s cubic-bezier(.16,.8,.2,1) both;
 }
 
+.gateway-content::before {
+  content: "";
+  position: absolute;
+  top: -5%;
+  left: 50%;
+  z-index: -1;
+  width: clamp(240px, 35vw, 390px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, #548dff42 0, #3269d31d 38%, transparent 70%);
+  filter: blur(18px);
+  transform: translateX(-50%);
+}
+
 .gateway-logo {
-  width: clamp(150px, 22vw, 250px);
+  width: clamp(170px, 24vw, 285px);
   aspect-ratio: 1;
   object-fit: contain;
-  border-radius: 22%;
-  filter: brightness(1.2) drop-shadow(0 0 12px #f6fbff8c) drop-shadow(0 0 42px #397eff80);
+  border-radius: 0;
+  image-rendering: auto;
+  mix-blend-mode: screen;
+  backface-visibility: hidden;
+  filter: brightness(1.16) contrast(1.04);
   animation: gateway-logo-breathe 3.4s ease-in-out infinite;
 }
 
@@ -651,8 +670,8 @@ main.site-locked {
 }
 
 @keyframes gateway-logo-breathe {
-  0%,100% { opacity: .84; transform: scale(.98); filter: brightness(1.05) drop-shadow(0 0 10px #fff7) drop-shadow(0 0 32px #397eff5e); }
-  50% { opacity: 1; transform: scale(1.025); filter: brightness(1.32) drop-shadow(0 0 16px #fff) drop-shadow(0 0 55px #397eff9c); }
+  0%,100% { opacity: .9; transform: translateZ(0) scale(.99); filter: brightness(1.08) contrast(1.04); }
+  50% { opacity: 1; transform: translateZ(0) scale(1.035); filter: brightness(1.28) contrast(1.06); }
 }
 
 @keyframes gate-color-cycle {
@@ -687,14 +706,14 @@ main.site-locked {
 
 @media (max-width: 620px) {
   .gateway-content { width: min(88vw, 390px); }
-  .gateway-logo { width: clamp(126px, 42vw, 170px); }
+  .gateway-logo { width: clamp(145px, 46vw, 190px); }
   .access-button { min-width: min(82vw, 300px); padding: 16px 36px; }
   .gateway-shapes { opacity: .2; }
   .gateway-content p { margin-top: 20px; font-size: 8px; letter-spacing: .25em; }
 }
 
 @media (max-height: 620px) {
-  .gateway-logo { width: clamp(105px, 25vh, 150px); }
+  .gateway-logo { width: clamp(120px, 28vh, 170px); }
   .access-button { margin-top: 22px; padding-block: 14px; }
   .gateway-content p { margin-top: 15px; }
 }
