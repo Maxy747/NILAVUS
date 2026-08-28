@@ -309,12 +309,6 @@ main::before {
   outline: none;
 }
 
-.kinetic-word.signature-spinning {
-  animation: signature-spin-x .48s cubic-bezier(.35,.05,.2,1) both;
-  transform-origin: center;
-  transform-style: preserve-3d;
-}
-
 main.offline-world {
   background:
     radial-gradient(circle at 50% -5%, #a100255c 0, transparent 36%),
@@ -941,14 +935,6 @@ body.about-active {
   100% { opacity: 1; transform: perspective(700px) rotateY(360deg) scale(1); filter: brightness(1); }
 }
 
-@keyframes signature-spin-x {
-  0% { opacity: 1; transform: perspective(900px) rotateX(0deg) scale(1); filter: brightness(1); }
-  25% { opacity: .32; transform: perspective(900px) rotateX(90deg) scale(.98); filter: brightness(2); }
-  50% { opacity: .8; transform: perspective(900px) rotateX(180deg) scale(1.025); filter: brightness(1.55) drop-shadow(0 0 18px #6ee8ff); }
-  75% { opacity: .32; transform: perspective(900px) rotateX(270deg) scale(.98); filter: brightness(2); }
-  100% { opacity: 1; transform: perspective(900px) rotateX(360deg) scale(1); filter: brightness(1); }
-}
-
 @keyframes about-reveal {
   from { opacity: 0; transform: scale(.975); filter: blur(14px); clip-path: inset(48% 0 48% 0); }
   to { opacity: 1; transform: scale(1); filter: blur(0); clip-path: inset(0); }
@@ -984,7 +970,6 @@ body.about-active {
     animation: none;
   }
 
-  .kinetic-word.signature-spinning,
   .about-page {
     animation: none;
   }

@@ -43,7 +43,6 @@ export default function Home() {
   const [gatewayOpen, setGatewayOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [aboutLeaving, setAboutLeaving] = useState(false);
-  const [signatureSpinning, setSignatureSpinning] = useState(false);
   const audioRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({});
   const previousOffline = useRef(false);
   const allOffline = health !== null && (['nilavus', 'nilavus-storage'] as NodeName[]).every(nodeName => health.nodes[nodeName]?.online === false);
@@ -180,15 +179,11 @@ export default function Home() {
   };
 
   const openAbout = () => {
-    if (signatureSpinning || aboutOpen) return;
+    if (aboutOpen) return;
     playSound('click');
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    setSignatureSpinning(true);
-    window.setTimeout(() => {
-      setAboutLeaving(false);
-      setAboutOpen(true);
-      setSignatureSpinning(false);
-    }, 480);
+    setAboutLeaving(false);
+    setAboutOpen(true);
   };
 
   const closeAbout = () => {
@@ -280,7 +275,7 @@ export default function Home() {
       </section>
 
       <section className="kinetic-signature" aria-label="Nilavus signature">
-        <button className={`kinetic-word ${signatureSpinning ? 'signature-spinning' : ''}`} type="button" onClick={openAbout} aria-label="Open the secret NILAVUS about page">NILAVUS<sup>®</sup></button>
+        <button className="kinetic-word" type="button" onClick={openAbout} aria-label="Open the secret NILAVUS about page">NILAVUS<sup>®</sup></button>
       </section>
 
       <footer><span>Made by MoeLustHer</span><span>Nilavu Systems</span><span>Secured with Tailscale</span><span>{visitorCount == null ? 'Visitors today —' : `${visitorCount} visitor${visitorCount === 1 ? '' : 's'} today`}</span></footer>
