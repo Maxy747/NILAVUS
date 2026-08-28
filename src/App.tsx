@@ -1,9 +1,10 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 
 type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
 type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean> };
 type HealthPayload = { nodes: Partial<Record<NodeName, NodeMetrics>> };
+type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back';
 
 const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ?? '').replace(/\/$/, '');
 const offlineHealth: HealthPayload = {
@@ -37,6 +38,64 @@ export default function Home() {
   const [mode, setMode] = useState<ConnectionMode>('remote');
   const [health, setHealth] = useState<HealthPayload | null>(null);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
+  const [logoActive, setLogoActive] = useState(false);
+  const audioRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({});
+  const pendingIntro = useRef(false);
+  const previousOffline = useRef(false);
+  const allOffline = health !== null && (['nilavus', 'nilavus-storage'] as NodeName[]).every(nodeName => health.nodes[nodeName]?.online === false);
+
+  const playSound = useCallback((name: SoundName) => {
+    const audio = audioRef.current[name];
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => {
+      if (name === 'intro') pendingIntro.current = true;
+    });
+  }, []);
+
+  useEffect(() => {
+    const soundFiles: Record<SoundName, string> = {
+      intro: 'audio/intro.mp3',
+      hover: 'audio/hover.mp3',
+      click: 'audio/click.mp3',
+      toggle: 'audio/toggle.mp3',
+      offline: 'audio/offline.mp3',
+      back: 'audio/back.mp3',
+    };
+    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26 };
+
+    for (const [name, file] of Object.entries(soundFiles) as [SoundName, string][]) {
+      const audio = new Audio(`${import.meta.env.BASE_URL}${file}`);
+      audio.preload = 'auto';
+      audio.volume = volumes[name];
+      audioRef.current[name] = audio;
+    }
+
+    playSound('intro');
+    const unlockIntro = () => {
+      if (pendingIntro.current) {
+        pendingIntro.current = false;
+        playSound('intro');
+      }
+    };
+    const playBack = () => playSound('back');
+    const playBackOnReturn = (event: PageTransitionEvent) => { if (event.persisted) playBack(); };
+    window.addEventListener('pointerdown', unlockIntro, { once: true, capture: true });
+    window.addEventListener('popstate', playBack);
+    window.addEventListener('pageshow', playBackOnReturn);
+    return () => {
+      window.removeEventListener('pointerdown', unlockIntro, { capture: true });
+      window.removeEventListener('popstate', playBack);
+      window.removeEventListener('pageshow', playBackOnReturn);
+      Object.values(audioRef.current).forEach(audio => audio?.pause());
+      audioRef.current = {};
+    };
+  }, [playSound]);
+
+  useEffect(() => {
+    if (allOffline && !previousOffline.current) playSound('offline');
+    previousOffline.current = allOffline;
+  }, [allOffline, playSound]);
 
   useEffect(() => {
     if (!functionsUrl) return;
@@ -83,20 +142,38 @@ export default function Home() {
   }, []);
 
   const chooseMode = (nextMode: ConnectionMode) => {
+    if (nextMode === mode) return;
+    playSound('toggle');
     setMode(nextMode);
   };
 
-  return <main>
+  const animateLogo = () => {
+    playSound('click');
+    setLogoActive(false);
+    window.requestAnimationFrame(() => setLogoActive(true));
+    window.setTimeout(() => setLogoActive(false), 1150);
+  };
+
+  const moveShapes = (event: ReactPointerEvent<HTMLElement>) => {
+    const x = (event.clientX / window.innerWidth - .5) * 34;
+    const y = (event.clientY / window.innerHeight - .5) * 28;
+    event.currentTarget.style.setProperty('--cursor-x', `${x}px`);
+    event.currentTarget.style.setProperty('--cursor-y', `${y}px`);
+  };
+
+  return <main className={allOffline ? 'offline-world' : ''} onPointerMove={moveShapes}>
     <div className="ambient ambient-one" /><div className="ambient ambient-two" />
+    <div className="ps-shapes" aria-hidden="true"><span className="shape-circle" /><span className="shape-cross" /><span className="shape-triangle" /><span className="shape-square" /></div>
+    <div className="boot-wash" aria-hidden="true" />
     <section className="shell">
       <header className="hero">
         <div className="topline">
-          <div className="brand"><img className="brand-logo" src={`${import.meta.env.BASE_URL}nilavus-logo.png`} alt="NILAVUS" /><span><small>Personal Server</small></span></div>
+          <div className="brand"><button className={`brand-trigger ${logoActive ? 'logo-active' : ''}`} type="button" onClick={animateLogo} aria-label="Animate NILAVUS logo"><img className="brand-logo" src={`${import.meta.env.BASE_URL}nilavus-logo.png`} alt="NILAVUS" /></button><span><small>Personal Server</small></span></div>
           <div className="node-statuses">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
         </div>
         <div className="hero-copy">
           <div><p className="eyebrow">PERSONAL CLOUD</p><h1>Your media.<br /><em>Your space.</em></h1></div>
-          <div className="connection-panel"><p>CONNECTION</p><div className="mode-toggle" role="group" aria-label="Connection mode"><button type="button" aria-pressed={mode === 'lan'} className={mode === 'lan' ? 'active' : ''} onClick={() => chooseMode('lan')}>🏠 <span>LAN</span></button><button type="button" aria-pressed={mode === 'remote'} className={mode === 'remote' ? 'active' : ''} onClick={() => chooseMode('remote')}>🌐 <span>Remote</span></button></div><div className="connection-detail"><i />{mode === 'lan' ? 'Direct • Local network' : 'Remote • Tailscale services'}</div></div>
+          <div className="connection-panel"><p>CONNECTION</p><div className={`mode-toggle mode-${mode}`} role="group" aria-label="Connection mode"><span className="toggle-glider" aria-hidden="true" /><button type="button" aria-pressed={mode === 'lan'} className={mode === 'lan' ? 'active' : ''} onClick={() => chooseMode('lan')}><span>LAN</span></button><button type="button" aria-pressed={mode === 'remote'} className={mode === 'remote' ? 'active' : ''} onClick={() => chooseMode('remote')}><span>Remote</span></button></div><div className="connection-detail"><i />{mode === 'lan' ? 'Direct • Local network' : 'Remote • Tailscale services'}</div></div>
         </div>
       </header>
 
@@ -106,10 +183,10 @@ export default function Home() {
           const target = service[mode]; const unavailable = !service.installed || !target; const node = health?.nodes[service.host]; const serviceOnline = node?.services?.[key];
           const liveState = !health ? 'checking' : !node?.online || serviceOnline === false ? 'offline' : serviceOnline ? 'online' : 'checking';
           const badge = !service.installed ? 'Coming soon' : liveState === 'online' ? 'Online' : liveState === 'offline' ? 'Offline' : 'Checking';
-          return <article className={`service-card ${service.tone} ${unavailable ? 'disabled' : ''}`} key={key} style={{ '--delay': `${index * 65}ms` } as CSSProperties}>
+          return <article className={`service-card ${service.tone} ${unavailable ? 'disabled' : ''}`} key={key} style={{ '--delay': `${index * 65}ms` } as CSSProperties} onMouseEnter={() => playSound('hover')} onPointerDown={() => playSound('hover')}>
             <div className="card-top"><span className="service-icon" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}${service.logo}`} alt="" /></span><span className={`access ${liveState}`}><i />{badge}</span></div>
             <div className="card-copy"><span className="group-label">{service.group}</span><h2>{service.name}</h2><p>{service.description}</p></div>
-            <div className="card-bottom"><div className="destination-block"><span className="destination" title={target ?? undefined}>{!service.installed ? 'Not installed' : displayUrl(target)}</span><span className="host-label">Running on <b>{service.host}</b></span></div>{unavailable ? <button className="open-button" type="button" disabled>{!service.installed ? 'Coming soon' : 'Unavailable'}</button> : <a className="open-button" href={target!} aria-label={`Open ${service.name} using ${mode === 'lan' ? 'LAN' : 'Remote'}`}>Open <b>↗</b></a>}</div>
+            <div className="card-bottom"><div className="destination-block"><span className="destination" title={target ?? undefined}>{!service.installed ? 'Not installed' : displayUrl(target)}</span><span className="host-label">Running on <b>{service.host}</b></span></div>{unavailable ? <button className="open-button" type="button" disabled>{!service.installed ? 'Coming soon' : 'Unavailable'}</button> : <a className="open-button" href={target!} onClick={() => playSound('click')} aria-label={`Open ${service.name} using ${mode === 'lan' ? 'LAN' : 'Remote'}`}>Open <b>↗</b></a>}</div>
           </article>
         })}</div>
       </section>
