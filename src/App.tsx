@@ -41,6 +41,9 @@ export default function Home() {
   const [logoActive, setLogoActive] = useState(false);
   const [gatewayLeaving, setGatewayLeaving] = useState(false);
   const [gatewayOpen, setGatewayOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [aboutLeaving, setAboutLeaving] = useState(false);
+  const [signatureSpinning, setSignatureSpinning] = useState(false);
   const audioRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({});
   const previousOffline = useRef(false);
   const allOffline = health !== null && (['nilavus', 'nilavus-storage'] as NodeName[]).every(nodeName => health.nodes[nodeName]?.online === false);
@@ -96,6 +99,16 @@ export default function Home() {
       document.body.classList.remove('gateway-active');
     };
   }, [gatewayOpen]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('about-active', aboutOpen);
+    document.body.classList.toggle('about-active', aboutOpen);
+    if (aboutOpen) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    return () => {
+      document.documentElement.classList.remove('about-active');
+      document.body.classList.remove('about-active');
+    };
+  }, [aboutOpen]);
 
   useEffect(() => {
     if (!functionsUrl) return;
@@ -166,6 +179,28 @@ export default function Home() {
     }, 900);
   };
 
+  const openAbout = () => {
+    if (signatureSpinning || aboutOpen) return;
+    playSound('click');
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    setSignatureSpinning(true);
+    window.setTimeout(() => {
+      setAboutLeaving(false);
+      setAboutOpen(true);
+      setSignatureSpinning(false);
+    }, 480);
+  };
+
+  const closeAbout = () => {
+    if (aboutLeaving) return;
+    playSound('back');
+    setAboutLeaving(true);
+    window.setTimeout(() => {
+      setAboutOpen(false);
+      setAboutLeaving(false);
+    }, 650);
+  };
+
   const moveShapes = (event: ReactPointerEvent<HTMLElement>) => {
     const x = (event.clientX / window.innerWidth - .5) * 34;
     const y = (event.clientY / window.innerHeight - .5) * 28;
@@ -187,11 +222,30 @@ export default function Home() {
         <p>PERSONAL INFRASTRUCTURE</p>
       </div>
     </section>}
+    {aboutOpen && <section className={`about-page ${aboutLeaving ? 'about-leaving' : ''}`} aria-label="About NILAVUS">
+      <div className="about-shapes" aria-hidden="true"><span className="about-circle" /><span className="about-cross" /><span className="about-triangle" /><span className="about-square" /></div>
+      <button className="about-back" type="button" onClick={closeAbout}>← Back</button>
+      <article className="about-content">
+        <p className="about-kicker">ABOUT</p>
+        <h2>You found the other side of NILAVUS.</h2>
+        <p>It started with an old computer,<br />a few hard drives,<br />and the idea that everything<br />could live in one place.</p>
+        <p className="about-stack">Movies.<br />Music.<br />Photos.<br />Books.<br />Files.</p>
+        <p>A little server became a system.<br />The system became a home.</p>
+        <p className="about-home">NILAVUS is that home.</p>
+        <div className="about-rule" />
+        <div className="about-spec"><h3>Built from:</h3><p>Linux · Docker · OpenMediaVault<br />Tailscale · Jellyfin · Immich<br />Kavita · Navidrome</p></div>
+        <div className="about-spec"><h3>Hardware:</h3><p>More ambition than hardware.</p></div>
+        <div className="about-rule" />
+        <ol className="about-index"><li>STORAGE</li><li>MEDIA</li><li>PHOTOS</li><li>BOOKS</li><li>MUSIC</li></ol>
+        <div className="about-mark"><strong>NILAVUS</strong><span>LOCAL • PRIVATE • PERSONAL</span></div>
+      </article>
+    </section>}
     <div className="ps-shapes" aria-hidden="true">
       <span className="shape-circle" /><span className="shape-cross" /><span className="shape-triangle" /><span className="shape-square" />
       <span className="shape-circle shape-circle-two" /><span className="shape-cross shape-cross-two" /><span className="shape-triangle shape-triangle-two" /><span className="shape-square shape-square-two" />
       <span className="shape-circle shape-circle-three" /><span className="shape-cross shape-cross-three" /><span className="shape-triangle shape-triangle-three" /><span className="shape-square shape-square-three" />
       <span className="shape-circle shape-circle-four" /><span className="shape-cross shape-cross-four" /><span className="shape-triangle shape-triangle-four" /><span className="shape-square shape-square-four" />
+      <span className="shape-square shape-square-left" /><span className="shape-cross shape-cross-left" />
     </div>
     <div className="boot-wash" aria-hidden="true" />
     <section className="shell">
@@ -226,7 +280,7 @@ export default function Home() {
       </section>
 
       <section className="kinetic-signature" aria-label="Nilavus signature">
-        <div className="kinetic-word" aria-hidden="true">NILAVUS<sup>®</sup></div>
+        <button className={`kinetic-word ${signatureSpinning ? 'signature-spinning' : ''}`} type="button" onClick={openAbout} aria-label="Open the secret NILAVUS about page">NILAVUS<sup>®</sup></button>
       </section>
 
       <footer><span>Made by MoeLustHer</span><span>Nilavu Systems</span><span>Secured with Tailscale</span><span>{visitorCount == null ? 'Visitors today —' : `${visitorCount} visitor${visitorCount === 1 ? '' : 's'} today`}</span></footer>
