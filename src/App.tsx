@@ -88,6 +88,16 @@ export default function Home() {
   }, [allOffline, playSound]);
 
   useEffect(() => {
+    document.documentElement.classList.toggle('gateway-active', !gatewayOpen);
+    document.body.classList.toggle('gateway-active', !gatewayOpen);
+    if (gatewayOpen) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    return () => {
+      document.documentElement.classList.remove('gateway-active');
+      document.body.classList.remove('gateway-active');
+    };
+  }, [gatewayOpen]);
+
+  useEffect(() => {
     if (!functionsUrl) return;
     fetch(`${functionsUrl}/visit`, {
       method: 'POST',
@@ -146,10 +156,14 @@ export default function Home() {
 
   const enterSite = () => {
     if (gatewayLeaving) return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     playSound('click');
     playSound('intro');
     setGatewayLeaving(true);
-    window.setTimeout(() => setGatewayOpen(true), 900);
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      setGatewayOpen(true);
+    }, 900);
   };
 
   const moveShapes = (event: ReactPointerEvent<HTMLElement>) => {

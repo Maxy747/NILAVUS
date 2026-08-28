@@ -412,9 +412,28 @@ main.offline-world::before {
 }
 
 /* PS2 access gateway */
+html.gateway-active,
+body.gateway-active {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+main.site-locked {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
 .access-gateway {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
   z-index: 1000;
   display: grid;
   place-items: center;
@@ -456,6 +475,7 @@ main.offline-world::before {
   z-index: 3;
   display: flex;
   width: min(82vw, 480px);
+  max-height: 92dvh;
   align-items: center;
   flex-direction: column;
   animation: gateway-arrive 1.05s cubic-bezier(.16,.8,.2,1) both;
@@ -666,9 +686,17 @@ main.offline-world::before {
 }
 
 @media (max-width: 620px) {
-  .gateway-logo { width: 170px; }
+  .gateway-content { width: min(88vw, 390px); }
+  .gateway-logo { width: clamp(126px, 42vw, 170px); }
   .access-button { min-width: min(82vw, 300px); padding: 16px 36px; }
   .gateway-shapes { opacity: .2; }
+  .gateway-content p { margin-top: 20px; font-size: 8px; letter-spacing: .25em; }
+}
+
+@media (max-height: 620px) {
+  .gateway-logo { width: clamp(105px, 25vh, 150px); }
+  .access-button { margin-top: 22px; padding-block: 14px; }
+  .gateway-content p { margin-top: 15px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
