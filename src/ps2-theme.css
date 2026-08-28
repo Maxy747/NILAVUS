@@ -506,10 +506,11 @@ main.site-locked {
   width: clamp(170px, 24vw, 285px);
   aspect-ratio: 1;
   object-fit: contain;
-  border-radius: 0;
+  border-radius: 22%;
   image-rendering: auto;
   mix-blend-mode: screen;
   backface-visibility: hidden;
+  box-shadow: 0 0 18px #f5fbff73, 0 0 48px #397eff70;
   filter: brightness(1.16) contrast(1.04);
   animation: gateway-logo-breathe 3.4s ease-in-out infinite;
 }
