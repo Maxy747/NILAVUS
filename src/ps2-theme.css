@@ -509,14 +509,15 @@ main.site-locked {
   outline: 0;
   background:
     linear-gradient(#02040b, #050815) padding-box,
-    conic-gradient(from var(--gate-angle), #33bdf5, #8f71ff, #ff5b9d, #5bdf93, #33bdf5) border-box;
-  box-shadow: inset 0 0 20px #388cff0c, 0 0 22px #3abff82b;
+    linear-gradient(var(--gate-color), var(--gate-color)) border-box;
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--gate-color) 8%, transparent), 0 0 22px color-mix(in srgb, var(--gate-color) 28%, transparent);
   color: #edf7ff;
   cursor: pointer;
   font: 800 clamp(18px, 3vw, 24px)/1 var(--mono);
   letter-spacing: .5em;
   text-indent: .5em;
   transition: transform .3s cubic-bezier(.2,.8,.2,1), background .3s ease;
+  animation: gate-color-cycle 9s ease-in-out infinite;
 }
 
 .access-button::before {
@@ -525,7 +526,7 @@ main.site-locked {
   inset: -7px;
   z-index: -1;
   border-radius: inherit;
-  background: conic-gradient(from var(--gate-angle), #33bdf5, #8f71ff, #ff5b9d, #5bdf93, #33bdf5);
+  background: var(--gate-color);
   opacity: .12;
   filter: blur(17px);
   transition: opacity .3s ease;
@@ -534,7 +535,7 @@ main.site-locked {
 .access-button:hover,
 .access-button:focus-visible {
   transform: scale(1.055);
-  animation: gate-spectrum 2.2s linear infinite, gate-glow 2.2s steps(4,end) infinite;
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--gate-color) 14%, transparent), 0 0 36px color-mix(in srgb, var(--gate-color) 72%, transparent);
 }
 
 .access-button:hover::before,
@@ -638,9 +639,9 @@ main.site-locked {
   backface-visibility: visible;
 }
 
-@property --gate-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
+@property --gate-color {
+  syntax: "<color>";
+  initial-value: #33bdf5;
   inherits: false;
 }
 
@@ -654,12 +655,11 @@ main.site-locked {
   50% { opacity: 1; transform: scale(1.025); filter: brightness(1.32) drop-shadow(0 0 16px #fff) drop-shadow(0 0 55px #397eff9c); }
 }
 
-@keyframes gate-spectrum { to { --gate-angle: 360deg; } }
-@keyframes gate-glow {
-  0% { box-shadow: 0 0 30px #33bdf571; }
-  25% { box-shadow: 0 0 30px #8f71ff71; }
-  50% { box-shadow: 0 0 30px #ff5b9d71; }
-  75%,100% { box-shadow: 0 0 30px #5bdf9371; }
+@keyframes gate-color-cycle {
+  0%, 100% { --gate-color: #33bdf5; }
+  25% { --gate-color: #8f71ff; }
+  50% { --gate-color: #ff5b9d; }
+  75% { --gate-color: #5bdf93; }
 }
 
 @keyframes site-reveal {
@@ -702,6 +702,7 @@ main.site-locked {
 @media (prefers-reduced-motion: reduce) {
   .gateway-content,
   .gateway-logo,
+  .access-button,
   .gateway-shapes > span,
   .site-entered .shell,
   .site-entered .hero-line,
