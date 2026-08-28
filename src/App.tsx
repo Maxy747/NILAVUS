@@ -191,6 +191,7 @@ export default function Home() {
       <span className="shape-circle" /><span className="shape-cross" /><span className="shape-triangle" /><span className="shape-square" />
       <span className="shape-circle shape-circle-two" /><span className="shape-cross shape-cross-two" /><span className="shape-triangle shape-triangle-two" /><span className="shape-square shape-square-two" />
       <span className="shape-circle shape-circle-three" /><span className="shape-cross shape-cross-three" /><span className="shape-triangle shape-triangle-three" /><span className="shape-square shape-square-three" />
+      <span className="shape-circle shape-circle-four" /><span className="shape-cross shape-cross-four" /><span className="shape-triangle shape-triangle-four" /><span className="shape-square shape-square-four" />
     </div>
     <div className="boot-wash" aria-hidden="true" />
     <section className="shell">

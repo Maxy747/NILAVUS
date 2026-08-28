@@ -655,6 +655,11 @@ main.site-locked {
 .shape-cross-three { right: 5%; bottom: 58%; width: 40px; height: 40px; opacity: .5; animation-delay: -12s; }
 .shape-cross-two::before,.shape-cross-two::after { top: 23px; width: 44px; }
 .shape-cross-three::before,.shape-cross-three::after { top: 19px; width: 36px; }
+.shape-circle-four { top: 36%; left: 25%; width: 30px; height: 30px; opacity: .42; animation-delay: -13s; }
+.shape-square-four { top: 71%; right: 16%; width: 36px; height: 36px; opacity: .42; animation-delay: -8s; }
+.shape-triangle-four { left: 55%; bottom: 18%; width: 39px; height: 34px; opacity: .28; animation-delay: -14s; }
+.shape-cross-four { right: 27%; top: 16%; width: 36px; height: 36px; opacity: .45; animation-delay: -15s; }
+.shape-cross-four::before,.shape-cross-four::after { top: 17px; width: 32px; }
 
 .brand-trigger { perspective: 700px; }
 .brand-trigger.logo-active .brand-logo {
