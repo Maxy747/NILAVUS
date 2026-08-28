@@ -231,6 +231,7 @@ export default function Home() {
         <div className="about-rule" />
         <div className="about-spec"><h3>Built from:</h3><p>Linux · Docker · OpenMediaVault<br />Tailscale · Jellyfin · Immich<br />Kavita · Navidrome</p></div>
         <div className="about-spec"><h3>Hardware:</h3><p>More ambition than hardware.</p></div>
+        <div className="about-spec"><h3>Developers:</h3><p>Max &amp; Mar</p></div>
         <div className="about-rule" />
         <ol className="about-index"><li>STORAGE</li><li>MEDIA</li><li>PHOTOS</li><li>BOOKS</li><li>MUSIC</li></ol>
         <div className="about-mark"><strong>NILAVUS</strong><span>LOCAL • PRIVATE • PERSONAL</span></div>
