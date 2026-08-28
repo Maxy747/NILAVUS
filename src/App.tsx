@@ -39,8 +39,9 @@ export default function Home() {
   const [health, setHealth] = useState<HealthPayload | null>(null);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [logoActive, setLogoActive] = useState(false);
+  const [gatewayLeaving, setGatewayLeaving] = useState(false);
+  const [gatewayOpen, setGatewayOpen] = useState(false);
   const audioRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({});
-  const pendingIntro = useRef(false);
   const previousOffline = useRef(false);
   const allOffline = health !== null && (['nilavus', 'nilavus-storage'] as NodeName[]).every(nodeName => health.nodes[nodeName]?.online === false);
 
@@ -48,9 +49,7 @@ export default function Home() {
     const audio = audioRef.current[name];
     if (!audio) return;
     audio.currentTime = 0;
-    void audio.play().catch(() => {
-      if (name === 'intro') pendingIntro.current = true;
-    });
+    void audio.play().catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -71,20 +70,11 @@ export default function Home() {
       audioRef.current[name] = audio;
     }
 
-    playSound('intro');
-    const unlockIntro = () => {
-      if (pendingIntro.current) {
-        pendingIntro.current = false;
-        playSound('intro');
-      }
-    };
     const playBack = () => playSound('back');
     const playBackOnReturn = (event: PageTransitionEvent) => { if (event.persisted) playBack(); };
-    window.addEventListener('pointerdown', unlockIntro, { once: true, capture: true });
     window.addEventListener('popstate', playBack);
     window.addEventListener('pageshow', playBackOnReturn);
     return () => {
-      window.removeEventListener('pointerdown', unlockIntro, { capture: true });
       window.removeEventListener('popstate', playBack);
       window.removeEventListener('pageshow', playBackOnReturn);
       Object.values(audioRef.current).forEach(audio => audio?.pause());
@@ -154,6 +144,14 @@ export default function Home() {
     window.setTimeout(() => setLogoActive(false), 1150);
   };
 
+  const enterSite = () => {
+    if (gatewayLeaving) return;
+    playSound('click');
+    playSound('intro');
+    setGatewayLeaving(true);
+    window.setTimeout(() => setGatewayOpen(true), 900);
+  };
+
   const moveShapes = (event: ReactPointerEvent<HTMLElement>) => {
     const x = (event.clientX / window.innerWidth - .5) * 34;
     const y = (event.clientY / window.innerHeight - .5) * 28;
@@ -161,9 +159,25 @@ export default function Home() {
     event.currentTarget.style.setProperty('--cursor-y', `${y}px`);
   };
 
-  return <main className={allOffline ? 'offline-world' : ''} onPointerMove={moveShapes}>
+  return <main className={`${allOffline ? 'offline-world ' : ''}${gatewayOpen ? 'site-entered' : 'site-locked'}`} onPointerMove={moveShapes}>
     <div className="ambient ambient-one" /><div className="ambient ambient-two" />
-    <div className="ps-shapes" aria-hidden="true"><span className="shape-circle" /><span className="shape-cross" /><span className="shape-triangle" /><span className="shape-square" /></div>
+    {!gatewayOpen && <section className={`access-gateway ${gatewayLeaving ? 'gateway-leaving' : ''}`} aria-label="Enter NILAVUS">
+      <div className="gateway-grid" aria-hidden="true" />
+      <div className="gateway-shapes" aria-hidden="true">
+        <span className="gate-circle gate-one" /><span className="gate-cross gate-two" /><span className="gate-triangle gate-three" /><span className="gate-square gate-four" />
+        <span className="gate-cross gate-five" /><span className="gate-circle gate-six" /><span className="gate-square gate-seven" /><span className="gate-triangle gate-eight" />
+      </div>
+      <div className="gateway-content">
+        <img className="gateway-logo" src={`${import.meta.env.BASE_URL}n-logo.png`} alt="NILAVUS N" />
+        <button className="access-button" type="button" onClick={enterSite}><span>ACCESS</span></button>
+        <p>PERSONAL INFRASTRUCTURE</p>
+      </div>
+    </section>}
+    <div className="ps-shapes" aria-hidden="true">
+      <span className="shape-circle" /><span className="shape-cross" /><span className="shape-triangle" /><span className="shape-square" />
+      <span className="shape-circle shape-circle-two" /><span className="shape-cross shape-cross-two" /><span className="shape-triangle shape-triangle-two" /><span className="shape-square shape-square-two" />
+      <span className="shape-circle shape-circle-three" /><span className="shape-cross shape-cross-three" /><span className="shape-triangle shape-triangle-three" /><span className="shape-square shape-square-three" />
+    </div>
     <div className="boot-wash" aria-hidden="true" />
     <section className="shell">
       <header className="hero">
@@ -172,7 +186,7 @@ export default function Home() {
           <div className="node-statuses">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
         </div>
         <div className="hero-copy">
-          <div><p className="eyebrow">PERSONAL CLOUD</p><h1>Your media.<br /><em>Your space.</em></h1></div>
+          <div><p className="eyebrow">PERSONAL CLOUD</p><h1><span className="hero-line hero-line-one">Your media.</span><span className="hero-line hero-line-two"><em>Your space.</em></span></h1></div>
           <div className="connection-panel"><p>CONNECTION</p><div className={`mode-toggle mode-${mode}`} role="group" aria-label="Connection mode"><span className="toggle-glider" aria-hidden="true" /><button type="button" aria-pressed={mode === 'lan'} className={mode === 'lan' ? 'active' : ''} onClick={() => chooseMode('lan')}><span>LAN</span></button><button type="button" aria-pressed={mode === 'remote'} className={mode === 'remote' ? 'active' : ''} onClick={() => chooseMode('remote')}><span>Remote</span></button></div><div className="connection-detail"><i />{mode === 'lan' ? 'Direct • Local network' : 'Remote • Tailscale services'}</div></div>
         </div>
       </header>
