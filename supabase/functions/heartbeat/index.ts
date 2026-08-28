@@ -12,7 +12,7 @@ Deno.serve(async (request) => {
   }
 
   const payload = await request.json().catch(() => null) as Record<string, unknown> | null;
-  const nodeName = payload?.nodeName;
+  const nodeName = payload?.nodeName ?? payload?.name;
   if (typeof nodeName !== 'string' || !allowedNodes.has(nodeName)) {
     return json({ error: 'invalid node' }, 400);
   }
