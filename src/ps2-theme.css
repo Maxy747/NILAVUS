@@ -622,9 +622,14 @@ body.about-active {
 .about-page {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
   z-index: 950;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   color: #f4f7ff;
   background:
     radial-gradient(circle at 72% 18%, #263f8326 0, transparent 30%),

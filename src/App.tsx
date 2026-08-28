@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 
 type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
@@ -217,7 +218,7 @@ export default function Home() {
         <p>PERSONAL INFRASTRUCTURE</p>
       </div>
     </section>}
-    {aboutOpen && <section className={`about-page ${aboutLeaving ? 'about-leaving' : ''}`} aria-label="About NILAVUS">
+    {aboutOpen && createPortal(<section className={`about-page ${aboutLeaving ? 'about-leaving' : ''}`} aria-label="About NILAVUS">
       <div className="about-shapes" aria-hidden="true"><span className="about-circle" /><span className="about-cross" /><span className="about-triangle" /><span className="about-square" /></div>
       <button className="about-back" type="button" onClick={closeAbout}>← Back</button>
       <article className="about-content">
@@ -234,7 +235,7 @@ export default function Home() {
         <ol className="about-index"><li>STORAGE</li><li>MEDIA</li><li>PHOTOS</li><li>BOOKS</li><li>MUSIC</li></ol>
         <div className="about-mark"><strong>NILAVUS</strong><span>LOCAL • PRIVATE • PERSONAL</span></div>
       </article>
-    </section>}
+    </section>, document.body)}
     <div className="ps-shapes" aria-hidden="true">
       <span className="shape-circle" /><span className="shape-cross" /><span className="shape-triangle" /><span className="shape-square" />
       <span className="shape-circle shape-circle-two" /><span className="shape-cross shape-cross-two" /><span className="shape-triangle shape-triangle-two" /><span className="shape-square shape-square-two" />
