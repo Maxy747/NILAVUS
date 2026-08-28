@@ -1,0 +1,8 @@
+[functions.heartbeat]
+verify_jwt = false
+
+[functions.status]
+verify_jwt = false
+
+[functions.visit]
+verify_jwt = false
