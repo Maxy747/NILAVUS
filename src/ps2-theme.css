@@ -116,13 +116,38 @@ main::before {
 }
 
 .health-card.offline {
+  position: relative;
+  isolation: isolate;
   border-color: #ff526d73;
-  animation: health-offline-glow 2.4s ease-in-out infinite;
+  box-shadow: inset 0 1px 0 #ffb0bd12, 0 18px 52px #050001a6, 0 0 13px #ff27442f;
 }
 
 .health-card.online {
+  position: relative;
+  isolation: isolate;
   border-color: #55e89642;
-  animation: health-online-breathe 3.8s ease-in-out infinite;
+  box-shadow: inset 0 1px 0 #d8fff018, 0 18px 52px #00061570, 0 0 8px #55e8961f;
+}
+
+.health-card.online::before,
+.health-card.offline::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.health-card.online::before {
+  box-shadow: 0 0 28px #55e89672;
+  animation: health-online-breathe 4.8s cubic-bezier(.45,0,.55,1) infinite;
+}
+
+.health-card.offline::before {
+  box-shadow: 0 0 34px #ff27448c;
+  animation: health-offline-glow 3.2s cubic-bezier(.45,0,.55,1) infinite;
 }
 
 .connection-panel {
@@ -417,13 +442,13 @@ main.offline-world::before {
 }
 
 @keyframes health-offline-glow {
-  0%,100% { box-shadow: inset 0 1px 0 #ffb0bd12, 0 18px 52px #050001a6, 0 0 16px #ff27443b; }
-  50% { box-shadow: inset 0 1px 0 #ffd3da1f, 0 18px 52px #050001a6, 0 0 34px #ff274485; }
+  0%,100% { opacity: .24; }
+  50% { opacity: .82; }
 }
 
 @keyframes health-online-breathe {
-  0%,100% { box-shadow: inset 0 1px 0 #d8fff018, 0 18px 52px #00061570, 0 0 9px #55e89620; }
-  50% { box-shadow: inset 0 1px 0 #d8fff025, 0 18px 52px #00061570, 0 0 22px #55e89652; }
+  0%,100% { opacity: .16; }
+  50% { opacity: .58; }
 }
 
 @keyframes logo-orbit {
@@ -1011,13 +1036,13 @@ body.about-active {
     animation: none;
   }
 
-  .health-card.online,
-  .health-card.offline {
+  .health-card.online::before,
+  .health-card.offline::before {
     animation: none;
   }
 
-  .health-card.online { box-shadow: inset 0 1px 0 #d8fff018, 0 18px 52px #00061570, 0 0 14px #55e89636; }
-  .health-card.offline { box-shadow: inset 0 1px 0 #ffb0bd12, 0 18px 52px #050001a6, 0 0 22px #ff27445c; }
+  .health-card.online::before { opacity: .38; }
+  .health-card.offline::before { opacity: .54; }
 
   .about-page {
     animation: none;
