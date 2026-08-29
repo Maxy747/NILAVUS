@@ -1058,13 +1058,25 @@ body.about-active {
 }
 
 .about-rule {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   height: 2px;
   margin: clamp(58px, 8vw, 86px) 0;
-  background: repeating-linear-gradient(90deg, #62e59b 0%, #3ac7ff 25%, #9378ff 50%, #ff69a8 75%, #62e59b 100%);
-  background-size: 200% 100%;
+  background: none;
   opacity: .72;
   box-shadow: 0 0 8px #3ac7ff9c, 0 0 20px #9378ff55, 0 0 32px #ff69a83b;
+}
+
+.about-rule::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 200%;
+  background: linear-gradient(90deg, #62e59b 0%, #3ac7ff 25%, #9378ff 50%, #ff69a8 75%, #62e59b 100%);
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  will-change: transform;
   animation: about-rule-flow 8s linear infinite;
 }
 
@@ -1344,8 +1356,8 @@ body.about-active {
 }
 
 @keyframes about-rule-flow {
-  from { background-position: 0 0; }
-  to { background-position: 100% 0; }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
 }
 
 @media (max-width: 620px) {
@@ -1403,6 +1415,10 @@ body.about-active {
   }
 
   .about-rule {
+    animation: none;
+  }
+
+  .about-rule::before {
     animation: none;
   }
 
