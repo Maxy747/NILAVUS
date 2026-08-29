@@ -67,6 +67,7 @@ export default function Home() {
   const [aboutLeaving, setAboutLeaving] = useState(false);
   const [modeAnimating, setModeAnimating] = useState(false);
   const modeAnimationTimer = useRef<number | null>(null);
+  const gatewayShapesRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({});
   const previousOffline = useRef(false);
   const statusFailures = useRef(0);
@@ -134,6 +135,31 @@ export default function Home() {
       document.documentElement.classList.remove('gateway-active');
       document.body.classList.remove('gateway-active');
     };
+  }, [gatewayOpen]);
+
+  useEffect(() => {
+    if (gatewayOpen) return;
+    const shapes = gatewayShapesRef.current;
+    if (!shapes) return;
+    const occupied: Array<{ x: number; y: number }> = [];
+    Array.from(shapes.children).forEach(child => {
+      const shape = child as HTMLElement;
+      let x = 0;
+      let y = 0;
+      let valid = false;
+      for (let attempt = 0; attempt < 20 && !valid; attempt += 1) {
+        x = 6 + Math.random() * 84;
+        y = 8 + Math.random() * 80;
+        const avoidsGatewayContent = x > 31 && x < 69 && y > 22 && y < 76;
+        const awayFromOtherShape = occupied.every(position => Math.hypot(position.x - x, position.y - y) > 10);
+        valid = !avoidsGatewayContent && awayFromOtherShape;
+      }
+      occupied.push({ x, y });
+      shape.style.left = `${x.toFixed(2)}%`;
+      shape.style.top = `${y.toFixed(2)}%`;
+      shape.style.right = 'auto';
+      shape.style.bottom = 'auto';
+    });
   }, [gatewayOpen]);
 
   useEffect(() => {
@@ -317,7 +343,7 @@ export default function Home() {
     <div className="ambient ambient-one" /><div className="ambient ambient-two" />
     {!gatewayOpen && <section className={`access-gateway ${gatewayLeaving ? 'gateway-leaving' : ''}`} aria-label="Enter NILAVUS">
       <div className="gateway-grid" aria-hidden="true" />
-      <div className="gateway-shapes" onPointerMove={moveGatewayShapes} onPointerLeave={resetGatewayShapes} aria-label="Interactive PlayStation shapes">
+      <div ref={gatewayShapesRef} className="gateway-shapes" onPointerMove={moveGatewayShapes} onPointerLeave={resetGatewayShapes} aria-label="Interactive PlayStation shapes">
         <span className="gate-circle gate-one" role="button" tabIndex={0} aria-label="Circle shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
         <span className="gate-cross gate-two" role="button" tabIndex={0} aria-label="Cross shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
         <span className="gate-triangle gate-three" role="button" tabIndex={0} aria-label="Triangle shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
