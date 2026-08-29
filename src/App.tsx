@@ -5,7 +5,7 @@ type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
 type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean> };
 type HealthPayload = { nodes: Partial<Record<NodeName, NodeMetrics>> };
-type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo';
+type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home';
 
 const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ?? '').replace(/\/$/, '');
 const offlineHealth: HealthPayload = {
@@ -78,8 +78,9 @@ export default function Home() {
       back: 'audio/back.mp3',
       about: 'audio/secret-about-v2.mp3',
       logo: 'audio/logo-spin-v2.mp3',
+      home: 'audio/menu-home-v1.mp3',
     };
-    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .48, logo: .44 };
+    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .48, logo: .44, home: .42 };
 
     for (const [name, file] of Object.entries(soundFiles) as [SoundName, string][]) {
       const audio = new Audio(`${import.meta.env.BASE_URL}${file}`);
@@ -99,6 +100,10 @@ export default function Home() {
       audioRef.current = {};
     };
   }, [playSound]);
+
+  useEffect(() => {
+    if (!gatewayOpen) playSound('home');
+  }, [gatewayOpen, playSound]);
 
   useEffect(() => {
     if (allOffline && !previousOffline.current) playSound('offline');
@@ -229,7 +234,8 @@ export default function Home() {
 
   const returnToAccess = () => {
     if (aboutLeaving) return;
-    playSound('back');
+    // This is a deliberate return to the ACCESS gateway, so use its menu cue.
+    playSound('home');
     setAboutLeaving(true);
     window.setTimeout(() => {
       setAboutOpen(false);
