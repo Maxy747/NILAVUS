@@ -257,6 +257,18 @@ main::before {
   box-shadow: inset 0 1px 0 #ffffff2e, 0 0 25px color-mix(in srgb, var(--accent) 42%, transparent);
 }
 
+@property --button-glow-x {
+  syntax: "<percentage>";
+  initial-value: 92%;
+  inherits: false;
+}
+
+@property --button-glow-y {
+  syntax: "<percentage>";
+  initial-value: 50%;
+  inherits: false;
+}
+
 .open-button {
   --button-glow-x: 92%;
   --button-glow-y: 50%;
@@ -269,7 +281,7 @@ main::before {
     color-mix(in srgb, var(--accent) 12%, #101b2a);
   border-color: color-mix(in srgb, var(--accent) 55%, #30445d);
   box-shadow: inset 0 0 12px color-mix(in srgb, var(--accent) 8%, transparent), 0 0 12px color-mix(in srgb, var(--accent) 22%, transparent);
-  transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease, background .3s ease, border-color .3s ease;
+  transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease, background .3s ease, border-color .3s ease, --button-glow-x .65s cubic-bezier(.2,.8,.2,1), --button-glow-y .65s cubic-bezier(.2,.8,.2,1);
 }
 
 .open-button::before {
