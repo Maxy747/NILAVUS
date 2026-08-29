@@ -328,6 +328,7 @@ export default function Home() {
 
   const startHealthHold = (nodeName: NodeName, event: ReactPointerEvent<HTMLElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
+    playSound('click');
     setHeldHealthCard(nodeName);
   };
 
