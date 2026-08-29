@@ -1,6 +1,3 @@
-const RELAY_URL =
-  'https://nilavus-telemetry-relay.mazinworlds.workers.dev/heartbeat';
-
 const responseHeaders = {
   'Content-Type': 'application/json',
   'Cache-Control': 'no-store',
@@ -29,7 +26,7 @@ export default {
       });
     }
 
-    const upstream = await fetch(RELAY_URL, {
+    const upstream = await env.TELEMETRY_RELAY.fetch('https://relay/heartbeat', {
       method: 'POST',
       headers: {
         Authorization: request.headers.get('Authorization') ?? '',

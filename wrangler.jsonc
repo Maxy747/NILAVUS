@@ -3,6 +3,12 @@
   "name": "nilavus",
   "compatibility_date": "2026-08-29",
   "main": "./worker/index.js",
+  "services": [
+    {
+      "binding": "TELEMETRY_RELAY",
+      "service": "nilavus-telemetry-relay"
+    }
+  ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
