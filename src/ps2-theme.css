@@ -1019,6 +1019,21 @@ body.about-active {
   text-transform: uppercase;
 }
 
+.about-spec h3::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 8px 1px 0;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.built-spec h3 { color: #3ac7ff; }
+.hardware-spec h3 { color: #62e59b; }
+.developers-spec h3 { color: #ff69a8; }
+
 .about-spec p {
   margin: 0;
   color: #c9d2e2;
