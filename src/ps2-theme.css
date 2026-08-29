@@ -508,16 +508,16 @@ main.offline-world::before {
 
 @keyframes gateway-float-a {
   0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
-  25% { transform: translate3d(10vw, -12vh, 0) rotate(28deg); }
-  50% { transform: translate3d(-9vw, 10vh, 0) rotate(58deg); }
-  75% { transform: translate3d(7vw, 14vh, 0) rotate(82deg); }
+  25% { transform: translate3d(4vw, -4vh, 0) rotate(10deg); }
+  50% { transform: translate3d(-3vw, 3vh, 0) rotate(18deg); }
+  75% { transform: translate3d(3vw, 5vh, 0) rotate(24deg); }
 }
 
 @keyframes gateway-float-b {
   0%, 100% { transform: translate3d(0, 0, 0) rotate(18deg); }
-  25% { transform: translate3d(-11vw, 11vh, 0) rotate(-12deg); }
-  50% { transform: translate3d(8vw, -13vh, 0) rotate(-42deg); }
-  75% { transform: translate3d(-7vw, -7vh, 0) rotate(-68deg); }
+  25% { transform: translate3d(-4vw, 4vh, 0) rotate(10deg); }
+  50% { transform: translate3d(3vw, -4vh, 0) rotate(2deg); }
+  75% { transform: translate3d(-3vw, -3vh, 0) rotate(-4deg); }
 }
 
 @keyframes about-float-a {
@@ -1299,14 +1299,14 @@ body.about-active {
 .gate-cross { width: 56px; height: 56px; color: #8b74ff; }
 .gate-cross::before,.gate-cross::after { content: ""; position: absolute; top: 27px; left: 3px; width: 50px; height: 2px; background: currentColor; transform: rotate(45deg); }
 .gate-cross::after { transform: rotate(-45deg); }
-.gate-one { top: 13%; left: 10%; animation: gateway-float-a 22s ease-in-out infinite; }
-.gate-two { top: 18%; right: 12%; animation: gateway-float-b 25s ease-in-out -3s infinite; }
-.gate-three { bottom: 13%; left: 17%; animation: gateway-float-b 23s ease-in-out -7s infinite; }
-.gate-four { right: 18%; bottom: 15%; animation: gateway-float-a 27s ease-in-out -5s infinite; }
-.gate-five { left: 29%; top: 28%; transform: scale(.58); animation: gateway-float-a 24s ease-in-out -9s infinite; }
-.gate-six { right: 31%; top: 31%; transform: scale(.55); animation: gateway-float-b 26s ease-in-out -4s infinite; }
-.gate-seven { left: 8%; bottom: 38%; transform: rotate(18deg) scale(.48); animation: gateway-float-a 28s ease-in-out -2s infinite; }
-.gate-eight { right: 8%; bottom: 39%; transform: scale(.48); animation: gateway-float-b 23s ease-in-out -6s infinite; }
+.gate-one { top: 13%; left: 10%; animation: gateway-float-a 58s ease-in-out infinite; }
+.gate-two { top: 18%; right: 12%; animation: gateway-float-b 64s ease-in-out -3s infinite; }
+.gate-three { bottom: 13%; left: 17%; animation: gateway-float-b 61s ease-in-out -7s infinite; }
+.gate-four { right: 18%; bottom: 15%; animation: gateway-float-a 69s ease-in-out -5s infinite; }
+.gate-five { left: 29%; top: 28%; transform: scale(.58); animation: gateway-float-a 63s ease-in-out -9s infinite; }
+.gate-six { right: 31%; top: 31%; transform: scale(.55); animation: gateway-float-b 67s ease-in-out -4s infinite; }
+.gate-seven { left: 8%; bottom: 38%; transform: rotate(18deg) scale(.48); animation: gateway-float-a 72s ease-in-out -2s infinite; }
+.gate-eight { right: 8%; bottom: 39%; transform: scale(.48); animation: gateway-float-b 60s ease-in-out -6s infinite; }
 
 /* Denser, still restrained background symbol field */
 .shape-circle-two { top: 47%; left: 45%; width: 38px; height: 38px; opacity: .55; animation-delay: -4s; }
