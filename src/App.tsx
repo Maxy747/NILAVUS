@@ -306,7 +306,7 @@ export default function Home() {
             <div className="underhood-node tailscale-node"><b>TAILSCALE</b><small>private / remote bridge</small></div>
             <div className="underhood-branches">
               <div className="underhood-branch laptop-branch">
-                <div className="underhood-node machine-node"><b>NILAVUS</b><small>HP Ubuntu laptop · processing</small></div>
+                <div className="underhood-node machine-node"><b>NILAVUS</b><small>Dosimeter · processing</small></div>
                 <ul><li>Jellyfin</li><li>qBittorrent</li><li>Immich</li><li>Kavita</li><li>Navidrome</li><li>Cockpit</li></ul>
               </div>
               <div className="underhood-branch nas-branch">
