@@ -64,9 +64,9 @@ export default function Home() {
       offline: 'audio/offline.mp3',
       back: 'audio/back.mp3',
       about: 'audio/secret-about-v2.mp3',
-      logo: 'audio/logo-spin.mp3',
+      logo: 'audio/logo-spin-v2.mp3',
     };
-    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .48, logo: .34 };
+    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .48, logo: .44 };
 
     for (const [name, file] of Object.entries(soundFiles) as [SoundName, string][]) {
       const audio = new Audio(`${import.meta.env.BASE_URL}${file}`);
