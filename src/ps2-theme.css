@@ -232,6 +232,12 @@ main::before {
   transition-duration: .1s;
 }
 
+.mode-switching .service-card {
+  z-index: 2;
+  will-change: transform, box-shadow, border-color;
+  animation: mode-card-stretch .74s cubic-bezier(.22,.8,.24,1) both;
+}
+
 .service-card.disabled:hover {
   transform: translateY(-5px) scale(1.018);
   border-color: #89a4c64a;
@@ -427,6 +433,30 @@ main.offline-world::before {
 @keyframes shell-arrival {
   from { opacity: 0; transform: translateY(18px) scale(.985); }
   to { opacity: 1; transform: none; }
+}
+
+@keyframes mode-card-stretch {
+  0% {
+    transform: scale3d(1,1,1);
+    border-color: #70cfff40;
+    box-shadow: inset 0 1px 0 #d8f7ff14, 0 18px 52px #00061570, 0 0 0 #3b9cff00;
+  }
+  30% {
+    transform: scale3d(1.028,.982,1);
+    border-color: #69cfffcc;
+    box-shadow: inset 0 1px 0 #e5fbff35, 0 22px 58px #0006158c, 0 0 34px #318dff8a;
+  }
+  58% {
+    transform: scale3d(.994,1.012,1);
+    border-color: #76d8ff91;
+    box-shadow: inset 0 1px 0 #d8f7ff25, 0 20px 54px #0006157a, 0 0 24px #318dff58;
+  }
+  78% { transform: scale3d(1.006,.997,1); }
+  100% {
+    transform: scale3d(1,1,1);
+    border-color: #70cfff40;
+    box-shadow: inset 0 1px 0 #d8f7ff14, 0 18px 52px #00061570, 0 0 0 #3b9cff00;
+  }
 }
 
 @keyframes boot-wash {
@@ -1051,4 +1081,6 @@ body.about-active {
   .about-page {
     animation: none;
   }
+
+  .mode-switching .service-card { animation: none; }
 }

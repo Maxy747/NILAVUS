@@ -44,6 +44,8 @@ export default function Home() {
   const [gatewayOpen, setGatewayOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [aboutLeaving, setAboutLeaving] = useState(false);
+  const [modeAnimating, setModeAnimating] = useState(false);
+  const modeAnimationTimer = useRef<number | null>(null);
   const audioRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({});
   const previousOffline = useRef(false);
   const allOffline = health !== null && (['nilavus', 'nilavus-storage'] as NodeName[]).every(nodeName => health.nodes[nodeName]?.online === false);
@@ -91,6 +93,10 @@ export default function Home() {
     if (allOffline && !previousOffline.current) playSound('offline');
     previousOffline.current = allOffline;
   }, [allOffline, playSound]);
+
+  useEffect(() => () => {
+    if (modeAnimationTimer.current !== null) window.clearTimeout(modeAnimationTimer.current);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('gateway-active', !gatewayOpen);
@@ -160,6 +166,12 @@ export default function Home() {
     if (nextMode === mode) return;
     playSound('toggle');
     setMode(nextMode);
+    setModeAnimating(true);
+    if (modeAnimationTimer.current !== null) window.clearTimeout(modeAnimationTimer.current);
+    modeAnimationTimer.current = window.setTimeout(() => {
+      setModeAnimating(false);
+      modeAnimationTimer.current = null;
+    }, 760);
   };
 
   const animateLogo = () => {
@@ -266,7 +278,7 @@ export default function Home() {
 
       <section className="services" aria-label="NAS services">
         <div className="section-heading"><span>Services</span><b>{mode === 'lan' ? 'Direct connection' : 'Internet / Tailscale'}</b></div>
-        <div className="service-grid">{Object.entries(services).map(([key, service], index) => {
+        <div className={`service-grid ${modeAnimating ? 'mode-switching' : ''}`}>{Object.entries(services).map(([key, service], index) => {
           const target = service[mode]; const unavailable = !service.installed || !target; const node = health?.nodes[service.host]; const serviceOnline = node?.services?.[key];
           const liveState = !health ? 'checking' : !node?.online || serviceOnline === false ? 'offline' : serviceOnline ? 'online' : 'checking';
           const badge = !service.installed ? 'Coming soon' : liveState === 'online' ? 'Online' : liveState === 'offline' ? 'Offline' : 'Checking';
