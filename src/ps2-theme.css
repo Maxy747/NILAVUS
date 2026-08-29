@@ -157,8 +157,6 @@ main::before {
 .health-card {
   position: relative;
   padding: 0;
-  min-height: 0;
-  aspect-ratio: 1 / 1;
   perspective: 1200px;
   cursor: pointer;
   user-select: none;
@@ -167,51 +165,57 @@ main::before {
 
 .health-card-flip {
   position: relative;
-  display: grid;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  border-radius: inherit;
+  min-height: 218px;
   transform-style: preserve-3d;
   filter: drop-shadow(0 0 0 transparent);
-  transition: transform .52s cubic-bezier(.2,.78,.2,1), filter .52s ease;
-  will-change: transform;
+  transition: filter .52s ease;
+  will-change: filter;
 }
 
 .health-card-held .health-card-flip {
-  transform: rotateX(180deg);
   filter: drop-shadow(0 0 12px #4baeff88) drop-shadow(0 0 30px #4baeff52);
 }
 
 .health-face {
-  grid-area: 1 / 1;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
+  min-height: 218px;
   padding: 22px;
-  overflow: hidden;
-  border-radius: inherit;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transition: transform .52s cubic-bezier(.2,.78,.2,1), opacity 0s linear .26s;
+  will-change: transform, opacity;
 }
 
 .health-front {
   position: relative;
   z-index: 1;
+  opacity: 1;
+  transform: rotateX(0deg);
 }
 
 .health-back {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 2;
   display: grid;
   place-items: center;
+  overflow: hidden;
+  border-radius: inherit;
   background:
     radial-gradient(circle at 50% 45%, #2146753d 0, transparent 58%),
     linear-gradient(145deg, #0c192cbf, #040914e8);
+  opacity: 0;
   transform: rotateX(180deg);
+}
+
+.health-card-held .health-front {
+  opacity: 0;
+  transform: rotateX(-180deg);
+}
+
+.health-card-held .health-back {
+  opacity: 1;
+  transform: rotateX(0deg);
 }
 
 .health-back::before {
@@ -230,12 +234,12 @@ main::before {
   max-width: 100%;
   white-space: nowrap;
   color: #8aa8c72e;
-  font: 800 clamp(48px, 8vw, 92px)/1 var(--mono);
-  letter-spacing: .02em;
+  font: 800 clamp(44px, 6vw, 72px)/1 var(--mono);
+  letter-spacing: .03em;
   text-align: center;
   text-shadow: 1px 1px 0 #d4edff12, -1px -1px 0 #000b1c99, 0 0 20px #6aa9d414;
   -webkit-text-stroke: 1px #b8dcf514;
-  transform: scaleX(.86);
+  transform: scaleX(.88);
 }
 
 .health-card-held {
@@ -693,7 +697,7 @@ main.offline-world::before {
   .ps-shapes { opacity: .14; }
   .service-card:hover { transform: translateY(-5px) scale(1.018); }
   .health-card-flip,
-  .health-face { min-height: 0; }
+  .health-face { min-height: 240px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
