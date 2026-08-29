@@ -994,21 +994,6 @@ body.about-active {
   font-style: normal;
 }
 
-.underhood-domains {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #6b91c52b;
-}
-
-.underhood-domains span {
-  color: #879cba;
-  font: 700 9px/1 var(--mono);
-  letter-spacing: .12em;
-}
-
 .about-rule {
   width: 100%;
   height: 1px;

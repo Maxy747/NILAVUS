@@ -315,7 +315,6 @@ export default function Home() {
               </div>
             </div>
             <div className="underhood-smb"><span>SMB</span><small>/mnt/nas · /mnt/bookus</small><i aria-hidden="true">↔</i><small>media · photos · books · music · files</small></div>
-            <div className="underhood-domains" aria-label="NILAVUS domains"><span>01 · STORAGE</span><span>02 · MEDIA</span><span>03 · PHOTOS</span><span>04 · BOOKS</span><span>05 · MUSIC</span></div>
           </div>
         </section>
         <div className="about-rule" />
