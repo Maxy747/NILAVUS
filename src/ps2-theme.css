@@ -157,7 +157,6 @@ main::before {
 .health-card {
   position: relative;
   padding: 0;
-  perspective: 1200px;
   cursor: pointer;
   user-select: none;
   touch-action: pan-y;
@@ -166,9 +165,10 @@ main::before {
 .health-card-flip {
   position: relative;
   min-height: 218px;
-  transform-style: preserve-3d;
+  overflow: hidden;
+  border-radius: inherit;
   filter: drop-shadow(0 0 0 transparent);
-  transition: filter .52s ease;
+  transition: filter .18s ease;
   will-change: filter;
 }
 
@@ -179,18 +179,15 @@ main::before {
 .health-face {
   min-height: 218px;
   padding: 22px;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform-style: preserve-3d;
-  transition: transform .52s cubic-bezier(.2,.78,.2,1), opacity 0s linear .26s;
-  will-change: transform, opacity;
+  overflow: hidden;
+  border-radius: inherit;
 }
 
 .health-front {
   position: relative;
   z-index: 1;
   opacity: 1;
-  transform: rotateX(0deg);
+  visibility: visible;
 }
 
 .health-back {
@@ -205,17 +202,18 @@ main::before {
     radial-gradient(circle at 50% 45%, #2146753d 0, transparent 58%),
     linear-gradient(145deg, #0c192cbf, #040914e8);
   opacity: 0;
-  transform: rotateX(180deg);
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .health-card-held .health-front {
   opacity: 0;
-  transform: rotateX(-180deg);
+  visibility: hidden;
 }
 
 .health-card-held .health-back {
   opacity: 1;
-  transform: rotateX(0deg);
+  visibility: visible;
 }
 
 .health-back::before {
