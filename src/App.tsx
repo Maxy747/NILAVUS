@@ -63,7 +63,7 @@ export default function Home() {
       toggle: 'audio/toggle.mp3',
       offline: 'audio/offline.mp3',
       back: 'audio/back.mp3',
-      about: 'audio/about.mp3',
+      about: 'audio/browser-to-menu.mp3',
       logo: 'audio/logo-spin.mp3',
     };
     const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .32, logo: .34 };
