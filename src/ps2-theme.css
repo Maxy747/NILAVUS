@@ -1054,11 +1054,13 @@ body.about-active {
 
 .about-rule {
   width: 100%;
-  height: 1px;
+  height: 2px;
   margin: clamp(58px, 8vw, 86px) 0;
-  background: linear-gradient(90deg, #64d7ff, #8d6fff 46%, #ff68ab 76%, transparent);
-  opacity: .48;
-  box-shadow: 0 0 14px #4f85ff47;
+  background: linear-gradient(90deg, #62e59b 0%, #3ac7ff 25%, #9378ff 50%, #ff69a8 75%, #62e59b 100%);
+  background-size: 240% 100%;
+  opacity: .72;
+  box-shadow: 0 0 8px #3ac7ff9c, 0 0 20px #9378ff55, 0 0 32px #ff69a83b;
+  animation: about-rule-flow 8s linear infinite;
 }
 
 .about-spec {
@@ -1334,6 +1336,11 @@ body.about-active {
   to { opacity: 1; transform: scale(1); filter: blur(0); clip-path: inset(0); }
 }
 
+@keyframes about-rule-flow {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
 @media (max-width: 620px) {
   .gateway-content { width: min(88vw, 390px); }
   .gateway-logo { width: clamp(145px, 46vw, 190px); }
@@ -1385,6 +1392,10 @@ body.about-active {
   .health-card.offline::before { opacity: .54; }
 
   .about-page {
+    animation: none;
+  }
+
+  .about-rule {
     animation: none;
   }
 
