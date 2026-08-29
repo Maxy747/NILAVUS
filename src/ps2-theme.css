@@ -506,6 +506,16 @@ main.offline-world::before {
   50% { transform: translate3d(-22px, 30px, 0) rotate(-8deg); }
 }
 
+@keyframes about-float-a {
+  0%, 100% { opacity: .48; transform: translate3d(0, 0, 0) rotate(0); filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 15px currentColor); }
+  50% { opacity: .92; transform: translate3d(18px, -28px, 0) rotate(22deg); filter: drop-shadow(0 0 11px currentColor) drop-shadow(0 0 29px currentColor); }
+}
+
+@keyframes about-float-b {
+  0%, 100% { opacity: .48; transform: translate3d(0, 0, 0) rotate(18deg); filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 15px currentColor); }
+  50% { opacity: .92; transform: translate3d(-22px, 30px, 0) rotate(-8deg); filter: drop-shadow(0 0 11px currentColor) drop-shadow(0 0 29px currentColor); }
+}
+
 @media (max-width: 760px) {
   .ps-shapes { opacity: .14; }
   .service-card:hover { transform: translateY(-5px) scale(1.018); }
@@ -902,13 +912,13 @@ body.about-active {
 
 .underhood-link {
   display: block;
-  height: 1px;
+  height: 2px;
   background: linear-gradient(90deg, #52d8ff, #aa7aff);
   box-shadow: 0 0 12px #719bff9c;
 }
 
 .underhood-spine {
-  width: 1px;
+  width: 2px;
   height: 23px;
   margin: 0 auto;
   background: linear-gradient(#789cff, transparent);
@@ -928,9 +938,20 @@ body.about-active {
   top: 0;
   left: 25%;
   right: 25%;
-  height: 1px;
+  height: 2px;
   background: linear-gradient(90deg, #62d8ff, #ff6db1);
   box-shadow: 0 0 12px #7398ff70;
+}
+
+.underhood-branches::after {
+  content: "";
+  position: absolute;
+  top: -18px;
+  left: calc(50% - 1px);
+  width: 2px;
+  height: 18px;
+  background: linear-gradient(#789cff, #62d8ff);
+  box-shadow: 0 0 12px #7398ffb0;
 }
 
 .underhood-branch { position: relative; }
@@ -939,7 +960,7 @@ body.about-active {
   position: absolute;
   top: -18px;
   left: 50%;
-  width: 1px;
+  width: 2px;
   height: 18px;
   background: #789cff;
 }
@@ -1139,11 +1160,11 @@ body.about-active {
 }
 
 .about-shapes > span { position: absolute; display: block; filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 20px currentColor); }
-.about-circle { top: 12%; right: 9%; width: 62px; height: 62px; color: #3ac7ff; border: 1px solid currentColor; border-radius: 50%; animation: shape-float-a 16s ease-in-out infinite; }
-.about-square { left: 8%; bottom: 13%; width: 52px; height: 52px; color: #ff69a8; border: 1px solid currentColor; transform: rotate(18deg); animation: shape-float-b 18s ease-in-out -4s infinite; }
-.about-triangle { right: 12%; bottom: 18%; width: 58px; height: 52px; color: #62e59b; background: currentColor; clip-path: polygon(50% 0,100% 100%,0 100%); animation: shape-float-b 15s ease-in-out -8s infinite; }
+.about-circle { top: 12%; right: 9%; width: 62px; height: 62px; color: #3ac7ff; border: 1px solid currentColor; border-radius: 50%; animation: about-float-a 16s ease-in-out infinite; }
+.about-square { left: 8%; bottom: 13%; width: 52px; height: 52px; color: #ff69a8; border: 1px solid currentColor; transform: rotate(18deg); animation: about-float-b 18s ease-in-out -4s infinite; }
+.about-triangle { right: 12%; bottom: 18%; width: 58px; height: 52px; color: #62e59b; background: currentColor; clip-path: polygon(50% 0,100% 100%,0 100%); animation: about-float-b 15s ease-in-out -8s infinite; }
 .about-triangle::after { content: ""; position: absolute; inset: 3px; background: #000; clip-path: inherit; }
-.about-cross { left: 8%; top: 22%; width: 58px; height: 58px; color: #9378ff; animation: shape-float-a 17s ease-in-out -7s infinite; }
+.about-cross { left: 8%; top: 22%; width: 58px; height: 58px; color: #9378ff; animation: about-float-a 17s ease-in-out -7s infinite; }
 .about-cross::before,.about-cross::after { content: ""; position: absolute; top: 28px; left: 3px; width: 52px; height: 1px; background: currentColor; transform: rotate(45deg); }
 .about-cross::after { transform: rotate(-45deg); }
 
@@ -1311,6 +1332,7 @@ body.about-active {
   .gateway-logo,
   .access-button,
   .gateway-shapes > span,
+  .about-shapes > span,
   .site-entered .shell,
   .site-entered .hero-line,
   .brand-trigger.logo-active .brand-logo {

@@ -294,6 +294,11 @@ export default function Home() {
         <p className="about-stack">Movies.<br />Music.<br />Photos.<br />Books.<br />Files.</p>
         <p>A little server became a system.<br />The system became a home.</p>
         <p className="about-home">NILAVUS is that home.</p>
+        <div className="about-rule" />
+        <div className="about-spec built-spec"><h3>Built from:</h3><p>Linux · Docker · OpenMediaVault<br />Tailscale · Jellyfin · Immich<br />Kavita · Navidrome</p></div>
+        <div className="about-spec hardware-spec"><h3>Hardware:</h3><p>More ambition than hardware.</p></div>
+        <div className="about-spec developers-spec"><h3>Developers:</h3><p>Max &amp; Mar</p></div>
+        <div className="about-rule" />
         <section className="about-underhood" aria-labelledby="underhood-title">
           <div className="underhood-heading"><span className="about-kicker" id="underhood-title">UNDER THE HOOD</span><span>how the home connects</span></div>
           <div className="underhood-map">
@@ -317,11 +322,6 @@ export default function Home() {
             <div className="underhood-smb"><span>SMB</span><small>/mnt/nas · /mnt/bookus</small><i aria-hidden="true">↔</i><small>media · photos · books · music · files</small></div>
           </div>
         </section>
-        <div className="about-rule" />
-        <div className="about-spec built-spec"><h3>Built from:</h3><p>Linux · Docker · OpenMediaVault<br />Tailscale · Jellyfin · Immich<br />Kavita · Navidrome</p></div>
-        <div className="about-spec hardware-spec"><h3>Hardware:</h3><p>More ambition than hardware.</p></div>
-        <div className="about-spec developers-spec"><h3>Developers:</h3><p>Max &amp; Mar</p></div>
-        <div className="about-rule" />
         <div className="about-mark"><strong>NILAVUS</strong><span>LOCAL • PRIVATE • PERSONAL</span></div>
         <button className="about-access" type="button" onClick={returnToAccess}>HOME</button>
       </article>
