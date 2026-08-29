@@ -1,0 +1,14 @@
+[Unit]
+Description=NILAVUS Dosimeter LAN metrics endpoint
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/nilavu-dashboard/dosimeter_metrics.py
+User=root
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

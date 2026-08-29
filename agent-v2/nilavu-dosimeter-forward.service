@@ -1,0 +1,10 @@
+[Unit]
+Description=Forward Dosimeter telemetry through NASig
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/nilavu-telemetry.env
+ExecStart=/usr/bin/python3 /opt/nilavu-dashboard/nas_forward.py
+User=root

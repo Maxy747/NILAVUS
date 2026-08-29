@@ -1,0 +1,11 @@
+[Unit]
+Description=Forward Dosimeter telemetry every 30 seconds
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=30s
+AccuracySec=2s
+Unit=nilavu-dosimeter-forward.service
+
+[Install]
+WantedBy=timers.target
