@@ -1,5 +1,5 @@
-const HEARTBEAT_URL =
-  'https://gibzoyvvmwvprkubfhvc.supabase.co/functions/v1/heartbeat';
+const RELAY_URL =
+  'https://nilavus-telemetry-relay.mazinworlds.workers.dev/heartbeat';
 
 const responseHeaders = {
   'Content-Type': 'application/json',
@@ -21,16 +21,6 @@ export default {
       });
     }
 
-    if (
-      !env.TELEMETRY_SECRET ||
-      request.headers.get('Authorization') !== `Bearer ${env.TELEMETRY_SECRET}`
-    ) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
-        status: 401,
-        headers: responseHeaders,
-      });
-    }
-
     const body = await request.text();
     if (body.length > 65_536) {
       return new Response(JSON.stringify({ error: 'payload too large' }), {
@@ -39,10 +29,10 @@ export default {
       });
     }
 
-    const upstream = await fetch(HEARTBEAT_URL, {
+    const upstream = await fetch(RELAY_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${env.TELEMETRY_SECRET}`,
+        Authorization: request.headers.get('Authorization') ?? '',
         'Content-Type': 'application/json',
       },
       body,
