@@ -35,6 +35,17 @@ const formatUptime = (seconds: number | null | undefined) => {
   return days ? `${days}d ${hours}h` : `${hours}h`;
 };
 
+const normalizeHealth = (payload: HealthPayload): HealthPayload => {
+  const rawNodes = payload.nodes ?? {};
+  const laptopAliases = ['dosimeter', 'nilavus-laptop'] as const;
+  const alias = laptopAliases.map(name => rawNodes[name as NodeName]).find(Boolean);
+  const current = rawNodes.nilavus;
+  // Older telemetry agents identified the laptop by its local hostname. Keep
+  // those heartbeats visible while the agent is being renamed to nilavus.
+  const laptop = alias && (!current || (!current.online && alias.online)) ? alias : current;
+  return { ...payload, nodes: { ...rawNodes, nilavus: laptop ?? rawNodes.nilavus } };
+};
+
 export default function Home() {
   const [mode, setMode] = useState<ConnectionMode>('remote');
   const [health, setHealth] = useState<HealthPayload | null>(null);
@@ -136,7 +147,7 @@ export default function Home() {
         if (!functionsUrl) throw new Error('Telemetry is not configured');
         const response = await fetch(`${functionsUrl}/status`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Health endpoint unavailable');
-        const payload = await response.json() as HealthPayload;
+        const payload = normalizeHealth(await response.json() as HealthPayload);
         if (active) setHealth(payload);
       } catch { if (active) setHealth(offlineHealth); }
     };
@@ -267,7 +278,7 @@ export default function Home() {
         <div className="about-rule" />
         <ol className="about-index"><li>STORAGE</li><li>MEDIA</li><li>PHOTOS</li><li>BOOKS</li><li>MUSIC</li></ol>
         <div className="about-mark"><strong>NILAVUS</strong><span>LOCAL • PRIVATE • PERSONAL</span></div>
-        <button className="about-access" type="button" onClick={returnToAccess}>ACCESS</button>
+        <button className="about-access" type="button" onClick={returnToAccess}>HOME</button>
       </article>
     </section>, document.body)}
     <div className="ps-shapes" aria-hidden="true">
