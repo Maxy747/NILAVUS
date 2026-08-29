@@ -277,12 +277,35 @@ export default function Home() {
         <p className="about-stack">Movies.<br />Music.<br />Photos.<br />Books.<br />Files.</p>
         <p>A little server became a system.<br />The system became a home.</p>
         <p className="about-home">NILAVUS is that home.</p>
+        <section className="about-underhood" aria-labelledby="underhood-title">
+          <div className="underhood-heading"><span className="about-kicker" id="underhood-title">UNDER THE HOOD</span><span>how the home connects</span></div>
+          <div className="underhood-map">
+            <div className="underhood-topline">
+              <div className="underhood-node public-node"><b>GITHUB PAGES</b><small>NILAVUS dashboard</small></div>
+              <span className="underhood-link" aria-hidden="true" />
+              <div className="underhood-node telemetry-node"><b>SUPABASE</b><small>live telemetry</small></div>
+            </div>
+            <div className="underhood-spine" aria-hidden="true" />
+            <div className="underhood-node tailscale-node"><b>TAILSCALE</b><small>private / remote bridge</small></div>
+            <div className="underhood-branches">
+              <div className="underhood-branch laptop-branch">
+                <div className="underhood-node machine-node"><b>NILAVUS</b><small>HP Ubuntu laptop · processing</small></div>
+                <ul><li>Jellyfin</li><li>qBittorrent</li><li>Immich</li><li>Kavita</li><li>Navidrome</li><li>Cockpit</li></ul>
+              </div>
+              <div className="underhood-branch nas-branch">
+                <div className="underhood-node machine-node"><b>NILAVUS-STORAGE</b><small>NAS · storage &amp; control</small></div>
+                <ul><li>OpenMediaVault</li><li>File Browser</li><li>NAS share</li><li>BOOKUS share</li></ul>
+              </div>
+            </div>
+            <div className="underhood-smb"><span>SMB</span><small>/mnt/nas · /mnt/bookus</small><i aria-hidden="true">↔</i><small>media · photos · books · music · files</small></div>
+            <div className="underhood-domains" aria-label="NILAVUS domains"><span>01 · STORAGE</span><span>02 · MEDIA</span><span>03 · PHOTOS</span><span>04 · BOOKS</span><span>05 · MUSIC</span></div>
+          </div>
+        </section>
         <div className="about-rule" />
         <div className="about-spec"><h3>Built from:</h3><p>Linux · Docker · OpenMediaVault<br />Tailscale · Jellyfin · Immich<br />Kavita · Navidrome</p></div>
         <div className="about-spec"><h3>Hardware:</h3><p>More ambition than hardware.</p></div>
         <div className="about-spec"><h3>Developers:</h3><p>Max &amp; Mar</p></div>
         <div className="about-rule" />
-        <ol className="about-index"><li>STORAGE</li><li>MEDIA</li><li>PHOTOS</li><li>BOOKS</li><li>MUSIC</li></ol>
         <div className="about-mark"><strong>NILAVUS</strong><span>LOCAL • PRIVATE • PERSONAL</span></div>
         <button className="about-access" type="button" onClick={returnToAccess}>HOME</button>
       </article>
