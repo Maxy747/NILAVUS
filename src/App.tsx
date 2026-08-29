@@ -326,7 +326,7 @@ export default function Home() {
         <section className="about-ps2" aria-labelledby="ps2-theme-title">
           <span className="about-kicker" id="ps2-theme-title">PS2 INSPIRED THEME</span>
           <div className="about-ps2-logos">
-            <img src={`${import.meta.env.BASE_URL}playstation-logo-v2.png`} alt="PlayStation" />
+            <img src={`${import.meta.env.BASE_URL}playstation-symbol-v3.png?v=3`} alt="PlayStation" />
             <img src={`${import.meta.env.BASE_URL}ps2-logo.png`} alt="PlayStation 2" />
           </div>
         </section>
