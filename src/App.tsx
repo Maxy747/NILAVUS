@@ -297,6 +297,18 @@ export default function Home() {
     event.currentTarget.style.setProperty('--cursor-y', `${y}px`);
   };
 
+  const moveButtonGlow = (event: ReactPointerEvent<HTMLElement>) => {
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    button.style.setProperty('--button-glow-x', `${((event.clientX - rect.left) / rect.width) * 100}%`);
+    button.style.setProperty('--button-glow-y', `${((event.clientY - rect.top) / rect.height) * 100}%`);
+  };
+
+  const resetButtonGlow = (event: ReactPointerEvent<HTMLElement>) => {
+    event.currentTarget.style.setProperty('--button-glow-x', '92%');
+    event.currentTarget.style.setProperty('--button-glow-y', '50%');
+  };
+
   const moveGatewayShapes = (event: ReactPointerEvent<HTMLDivElement>) => {
     const container = event.currentTarget;
     const pointerX = event.clientX;
@@ -439,7 +451,7 @@ export default function Home() {
           return <article className={`service-card ${service.tone} ${unavailable ? 'disabled' : ''}`} key={key} style={{ '--delay': `${index * 65}ms` } as CSSProperties} onMouseEnter={() => playSound('hover')} onPointerDown={() => playSound('hover')}>
             <div className="card-top"><span className="service-icon" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}${service.logo}`} alt="" /></span><span className={`access ${liveState}`}><i />{badge}</span></div>
             <div className="card-copy"><span className="group-label">{service.group}</span><h2>{service.name}</h2><p>{service.description}</p></div>
-            <div className="card-bottom"><div className="destination-block"><span className="destination" title={target ?? undefined}>{!service.installed ? 'Not installed' : displayUrl(target)}</span><span className="host-label">Running on <b>{service.host}</b></span></div>{unavailable ? <button className="open-button" type="button" disabled>{!service.installed ? 'Coming soon' : 'Unavailable'}</button> : <a className="open-button" href={target!} onClick={() => playSound('click')} aria-label={`Open ${service.name} using ${mode === 'lan' ? 'LAN' : 'Remote'}`}>Open <b>↗</b></a>}</div>
+            <div className="card-bottom"><div className="destination-block"><span className="destination" title={target ?? undefined}>{!service.installed ? 'Not installed' : displayUrl(target)}</span><span className="host-label">Running on <b>{service.host}</b></span></div>{unavailable ? <button className="open-button" type="button" disabled><span>{!service.installed ? 'Coming soon' : 'Unavailable'}</span></button> : <a className="open-button" href={target!} onPointerMove={moveButtonGlow} onPointerLeave={resetButtonGlow} onClick={() => playSound('click')} aria-label={`Open ${service.name} using ${mode === 'lan' ? 'LAN' : 'Remote'}`}><span>Open</span><b>↗</b></a>}</div>
           </article>
         })}</div>
       </section>
