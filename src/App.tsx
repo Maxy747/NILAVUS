@@ -8,7 +8,7 @@ type HealthPayload = { nodes: Record<string, NodeMetrics | undefined> };
 type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home' | 'shape';
 
 const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'https://gibzoyvvmwvprkubfhvc.supabase.co/functions/v1').replace(/\/$/, '');
-const dosimeterMetricsUrl = 'https://nilavus.whydah-darter.ts.net:8443/api/node';
+const dosimeterMetricsUrl = 'https://nilavus.whydah-darter.ts.net:10000/api/node';
 const offlineHealth: HealthPayload = {
   nodes: {
     nilavus: { online: false, temperatureC: null, cpuPercent: null, memoryPercent: null, diskPercent: null, uptimeSeconds: null, load: [], services: {} },
