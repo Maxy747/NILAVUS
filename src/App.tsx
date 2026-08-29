@@ -8,6 +8,7 @@ type HealthPayload = { nodes: Record<string, NodeMetrics | undefined> };
 type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home' | 'shape';
 
 const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ?? '').replace(/\/$/, '');
+const dosimeterMetricsUrl = 'https://nilavus.whydah-darter.ts.net:8443/api/node';
 const offlineHealth: HealthPayload = {
   nodes: {
     nilavus: { online: false, temperatureC: null, cpuPercent: null, memoryPercent: null, diskPercent: null, uptimeSeconds: null, load: [], services: {} },
@@ -192,6 +193,17 @@ export default function Home() {
         const response = await fetch(`${functionsUrl}/status`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Health endpoint unavailable');
         const payload = normalizeHealth(await response.json() as HealthPayload);
+        // Dosimeter exposes a lightweight Funnel endpoint. It keeps its card
+        // current even when NASig or the cloud telemetry relay is unavailable.
+        try {
+          const direct = await fetch(dosimeterMetricsUrl, { cache: 'no-store' });
+          if (direct.ok) {
+            const node = await direct.json() as Omit<NodeMetrics, 'online' | 'receivedAt'>;
+            payload.nodes.nilavus = { ...node, online: true, receivedAt: new Date().toISOString() };
+          }
+        } catch {
+          // Supabase remains the fallback source when the Funnel is unavailable.
+        }
         statusFailures.current = 0;
         if (active) setHealth(payload);
       } catch {
