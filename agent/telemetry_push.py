@@ -76,18 +76,21 @@ def collect_metrics() -> dict:
 
 
 def post_heartbeat(metrics: dict) -> None:
-    """Use curl's proven IPv4/TLS path for the outbound heartbeat."""
-    result = subprocess.run(
-        [
+    """Use curl over IPv4 and fail over between Cloudflare edge addresses."""
+    payload = json.dumps(metrics).encode("utf-8")
+    errors = []
+    resolutions = [None, "104.21.28.141", "172.67.170.219"]
+    for address in resolutions:
+        command = [
             "/usr/bin/curl",
             "-4",
             "--fail-with-body",
             "--silent",
             "--show-error",
             "--connect-timeout",
-            "15",
+            "8",
             "--max-time",
-            "25",
+            "15",
             "-X",
             "POST",
             HEARTBEAT_URL,
@@ -97,15 +100,20 @@ def post_heartbeat(metrics: dict) -> None:
             "Content-Type: application/json",
             "--data-binary",
             "@-",
-        ],
-        input=json.dumps(metrics).encode("utf-8"),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
-    if result.returncode != 0:
-        message = result.stderr.decode("utf-8", errors="replace").strip()
-        raise RuntimeError(f"heartbeat failed: {message}")
+        ]
+        if address:
+            command[1:1] = ["--resolve", f"nilavus.mazinworlds.workers.dev:443:{address}"]
+        result = subprocess.run(
+            command,
+            input=payload,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if result.returncode == 0:
+            return
+        errors.append(result.stderr.decode("utf-8", errors="replace").strip())
+    raise RuntimeError(f"heartbeat failed after Cloudflare failover: {' | '.join(errors)}")
 
 
 def main() -> int:
