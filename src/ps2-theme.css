@@ -836,8 +836,7 @@ body.about-active {
 
 .about-underhood {
   margin: clamp(76px, 10vw, 112px) 0 0;
-  padding: 22px 0 0;
-  border-top: 1px solid #6b91c52b;
+  padding: 0;
 }
 
 .underhood-heading {
@@ -1038,6 +1037,7 @@ body.about-active {
   font: 700 10px/1.3 var(--mono);
   letter-spacing: .16em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .about-spec h3::before {
