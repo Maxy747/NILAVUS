@@ -951,6 +951,7 @@ body.about-active {
 .underhood-branch ul {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 7px;
   margin: 10px 0 0;
   padding: 0;
@@ -1119,13 +1120,13 @@ body.about-active {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: .2;
+  opacity: .3;
 }
 
-.about-shapes > span { position: absolute; display: block; filter: drop-shadow(0 0 10px currentColor); }
-.about-circle { top: 12%; right: 9%; width: 62px; height: 62px; border: 1px solid #3ac7ff; border-radius: 50%; animation: shape-float-a 16s ease-in-out infinite; }
-.about-square { left: 8%; bottom: 13%; width: 52px; height: 52px; border: 1px solid #ff69a8; transform: rotate(18deg); animation: shape-float-b 18s ease-in-out -4s infinite; }
-.about-triangle { right: 12%; bottom: 18%; width: 58px; height: 52px; background: #62e59b; clip-path: polygon(50% 0,100% 100%,0 100%); animation: shape-float-b 15s ease-in-out -8s infinite; }
+.about-shapes > span { position: absolute; display: block; filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 20px currentColor); }
+.about-circle { top: 12%; right: 9%; width: 62px; height: 62px; color: #3ac7ff; border: 1px solid currentColor; border-radius: 50%; animation: shape-float-a 16s ease-in-out infinite; }
+.about-square { left: 8%; bottom: 13%; width: 52px; height: 52px; color: #ff69a8; border: 1px solid currentColor; transform: rotate(18deg); animation: shape-float-b 18s ease-in-out -4s infinite; }
+.about-triangle { right: 12%; bottom: 18%; width: 58px; height: 52px; color: #62e59b; background: currentColor; clip-path: polygon(50% 0,100% 100%,0 100%); animation: shape-float-b 15s ease-in-out -8s infinite; }
 .about-triangle::after { content: ""; position: absolute; inset: 3px; background: #000; clip-path: inherit; }
 .about-cross { left: 8%; top: 22%; width: 58px; height: 58px; color: #9378ff; animation: shape-float-a 17s ease-in-out -7s infinite; }
 .about-cross::before,.about-cross::after { content: ""; position: absolute; top: 28px; left: 3px; width: 52px; height: 1px; background: currentColor; transform: rotate(45deg); }
