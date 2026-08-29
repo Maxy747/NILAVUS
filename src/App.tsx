@@ -66,6 +66,7 @@ export default function Home() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [aboutLeaving, setAboutLeaving] = useState(false);
   const [modeAnimating, setModeAnimating] = useState(false);
+  const [heldHealthCard, setHeldHealthCard] = useState<NodeName | null>(null);
   const modeAnimationTimer = useRef<number | null>(null);
   const gatewayShapesRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({});
@@ -309,6 +310,13 @@ export default function Home() {
     event.currentTarget.style.setProperty('--button-glow-y', '50%');
   };
 
+  const startHealthHold = (nodeName: NodeName, event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    setHeldHealthCard(nodeName);
+  };
+
+  const stopHealthHold = () => setHeldHealthCard(null);
+
   const moveGatewayShapes = (event: ReactPointerEvent<HTMLDivElement>) => {
     const container = event.currentTarget;
     const pointerX = event.clientX;
@@ -458,7 +466,20 @@ export default function Home() {
 
       <section className="health" aria-label="System health">
         <div className="section-heading"><span>System health</span><b>Refreshes every 10 seconds</b></div>
-        <div className="health-grid">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <article className={`health-card ${state}`} key={nodeName}><div className="health-title"><div><span>{nodeName === 'nilavus' ? 'HP Laptop' : 'Storage PC'}</span><h3>{nodeName}</h3></div><b><i />{state}</b></div><div className="metric-grid"><div><span>Temperature</span><strong>{formatMetric(node?.temperatureC, '°C')}</strong></div><div><span>CPU activity</span><strong>{formatMetric(node?.cpuPercent)}</strong></div><div><span>Memory</span><strong>{formatMetric(node?.memoryPercent)}</strong></div><div><span>Storage</span><strong>{formatMetric(node?.diskPercent)}</strong></div><div><span>Load</span><strong>{node?.load?.[0]?.toFixed(2) ?? '—'}</strong></div><div><span>Uptime</span><strong>{formatUptime(node?.uptimeSeconds)}</strong></div></div></article> })}</div>
+        <div className="health-grid">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => {
+          const node = health?.nodes[nodeName];
+          const state = node?.online ? 'online' : health ? 'offline' : 'checking';
+          const held = heldHealthCard === nodeName;
+          return <article className={`health-card ${state} ${held ? 'health-card-held' : ''}`} key={nodeName} onPointerDown={event => startHealthHold(nodeName, event)} onPointerUp={stopHealthHold} onPointerCancel={stopHealthHold} onPointerLeave={stopHealthHold} onContextMenu={event => event.preventDefault()} aria-label={`${nodeName} system health. Press and hold to reveal host name.`}>
+            <div className="health-card-flip">
+              <div className="health-face health-front">
+                <div className="health-title"><div><span>{nodeName === 'nilavus' ? 'HP Laptop' : 'Storage PC'}</span><h3>{nodeName}</h3></div><b><i />{state}</b></div>
+                <div className="metric-grid"><div><span>Temperature</span><strong>{formatMetric(node?.temperatureC, '°C')}</strong></div><div><span>CPU activity</span><strong>{formatMetric(node?.cpuPercent)}</strong></div><div><span>Memory</span><strong>{formatMetric(node?.memoryPercent)}</strong></div><div><span>Storage</span><strong>{formatMetric(node?.diskPercent)}</strong></div><div><span>Load</span><strong>{node?.load?.[0]?.toFixed(2) ?? '—'}</strong></div><div><span>Uptime</span><strong>{formatUptime(node?.uptimeSeconds)}</strong></div></div>
+              </div>
+              <div className="health-face health-back" aria-hidden={!held}><span>{nodeName === 'nilavus' ? 'DOSIMETER' : 'PENTIUM'}</span></div>
+            </div>
+          </article>;
+        })}</div>
       </section>
 
       <section className="kinetic-signature" aria-label="Nilavus signature">

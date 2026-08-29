@@ -154,6 +154,79 @@ main::before {
   animation: health-offline-glow 4s ease-in-out infinite alternate both;
 }
 
+.health-card {
+  position: relative;
+  padding: 0;
+  perspective: 1200px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.health-card-flip {
+  position: relative;
+  min-height: 218px;
+  transform-style: preserve-3d;
+  transition: transform .52s cubic-bezier(.2,.78,.2,1);
+  will-change: transform;
+}
+
+.health-card-held .health-card-flip {
+  transform: rotateY(180deg);
+}
+
+.health-face {
+  min-height: 218px;
+  padding: 22px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.health-front {
+  position: relative;
+  z-index: 1;
+}
+
+.health-back {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 45%, #2146753d 0, transparent 58%),
+    linear-gradient(145deg, #0c192cbf, #040914e8);
+  transform: rotateY(180deg);
+}
+
+.health-back::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid #83b5df1c;
+  border-radius: 10px;
+  background: repeating-linear-gradient(135deg, transparent 0 7px, #9ac5ed08 8px 9px);
+  box-shadow: inset 0 0 30px #00000033;
+}
+
+.health-back span {
+  position: relative;
+  z-index: 1;
+  color: #8aa8c72e;
+  font: 800 clamp(34px, 6vw, 68px)/1 var(--mono);
+  letter-spacing: .08em;
+  text-align: center;
+  text-shadow: 1px 1px 0 #d4edff12, -1px -1px 0 #000b1c99, 0 0 20px #6aa9d414;
+  -webkit-text-stroke: 1px #b8dcf514;
+}
+
+.health-card-held {
+  border-color: #86caff8a;
+  box-shadow: inset 0 1px 0 #e5f8ff29, 0 20px 58px #000615aa, 0 0 24px #4baeff55;
+}
+
 .connection-panel {
   box-shadow: inset 0 1px 0 #e2fbff1a, 0 16px 45px #00071673, 0 0 22px #287dff12;
 }
@@ -603,6 +676,8 @@ main.offline-world::before {
 @media (max-width: 760px) {
   .ps-shapes { opacity: .14; }
   .service-card:hover { transform: translateY(-5px) scale(1.018); }
+  .health-card-flip,
+  .health-face { min-height: 292px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
