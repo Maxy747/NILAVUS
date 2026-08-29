@@ -281,7 +281,7 @@ export default function Home() {
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const distance = Math.hypot(centerX - pointerX, centerY - pointerY);
-      const influence = Math.max(0, 1 - distance / 220);
+      const influence = Math.max(0, 1 - distance / 260);
       if (!influence) {
         shape.style.setProperty('--shape-near-x', '0px');
         shape.style.setProperty('--shape-near-y', '0px');
@@ -289,8 +289,8 @@ export default function Home() {
         return;
       }
       const safeDistance = Math.max(distance, 1);
-      shape.style.setProperty('--shape-near-x', `${((centerX - pointerX) / safeDistance) * influence * 28}px`);
-      shape.style.setProperty('--shape-near-y', `${((centerY - pointerY) / safeDistance) * influence * 28}px`);
+      shape.style.setProperty('--shape-near-x', `${((centerX - pointerX) / safeDistance) * influence * 12}px`);
+      shape.style.setProperty('--shape-near-y', `${((centerY - pointerY) / safeDistance) * influence * 12}px`);
       shape.style.setProperty('--shape-near-glow', influence.toFixed(3));
     });
   };
