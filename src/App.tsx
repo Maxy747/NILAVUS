@@ -63,10 +63,10 @@ export default function Home() {
       toggle: 'audio/toggle.mp3',
       offline: 'audio/offline.mp3',
       back: 'audio/back.mp3',
-      about: 'audio/browser-to-menu.mp3',
+      about: 'audio/secret-about-v2.mp3',
       logo: 'audio/logo-spin.mp3',
     };
-    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .32, logo: .34 };
+    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .48, logo: .34 };
 
     for (const [name, file] of Object.entries(soundFiles) as [SoundName, string][]) {
       const audio = new Audio(`${import.meta.env.BASE_URL}${file}`);
@@ -183,6 +183,11 @@ export default function Home() {
 
   const openAbout = () => {
     if (aboutOpen) return;
+    for (const [name, audio] of Object.entries(audioRef.current) as [SoundName, HTMLAudioElement][]) {
+      if (name === 'about') continue;
+      audio.pause();
+      audio.currentTime = 0;
+    }
     playSound('about');
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setAboutLeaving(false);
