@@ -5,7 +5,7 @@ type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
 type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean>; receivedAt?: string };
 type HealthPayload = { nodes: Record<string, NodeMetrics | undefined> };
-type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home';
+type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home' | 'shape';
 
 const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ?? '').replace(/\/$/, '');
 const offlineHealth: HealthPayload = {
@@ -90,8 +90,9 @@ export default function Home() {
       about: 'audio/secret-about-v2.mp3',
       logo: 'audio/logo-spin-v2.mp3',
       home: 'audio/menu-home-v1.mp3',
+      shape: 'audio/shape-press.mp3',
     };
-    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .48, logo: .44, home: .42 };
+    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .48, logo: .44, home: .42, shape: .5 };
 
     for (const [name, file] of Object.entries(soundFiles) as [SoundName, string][]) {
       const audio = new Audio(`${import.meta.env.BASE_URL}${file}`);
@@ -270,13 +271,61 @@ export default function Home() {
     event.currentTarget.style.setProperty('--cursor-y', `${y}px`);
   };
 
+  const moveGatewayShapes = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const container = event.currentTarget;
+    const pointerX = event.clientX;
+    const pointerY = event.clientY;
+    Array.from(container.children).forEach(child => {
+      const shape = child as HTMLElement;
+      const rect = shape.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const distance = Math.hypot(centerX - pointerX, centerY - pointerY);
+      const influence = Math.max(0, 1 - distance / 220);
+      if (!influence) {
+        shape.style.setProperty('--shape-near-x', '0px');
+        shape.style.setProperty('--shape-near-y', '0px');
+        shape.style.setProperty('--shape-near-glow', '0');
+        return;
+      }
+      const safeDistance = Math.max(distance, 1);
+      shape.style.setProperty('--shape-near-x', `${((centerX - pointerX) / safeDistance) * influence * 28}px`);
+      shape.style.setProperty('--shape-near-y', `${((centerY - pointerY) / safeDistance) * influence * 28}px`);
+      shape.style.setProperty('--shape-near-glow', influence.toFixed(3));
+    });
+  };
+
+  const resetGatewayShapes = (event: ReactPointerEvent<HTMLDivElement>) => {
+    Array.from(event.currentTarget.children).forEach(child => {
+      const shape = child as HTMLElement;
+      shape.style.setProperty('--shape-near-x', '0px');
+      shape.style.setProperty('--shape-near-y', '0px');
+      shape.style.setProperty('--shape-near-glow', '0');
+    });
+  };
+
+  const pressGatewayShape = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    const shape = event.currentTarget;
+    playSound('shape');
+    shape.classList.remove('shape-pressed');
+    void shape.offsetWidth;
+    shape.classList.add('shape-pressed');
+    window.setTimeout(() => shape.classList.remove('shape-pressed'), 720);
+  };
+
   return <main className={`${allOffline ? 'offline-world ' : ''}${gatewayOpen ? 'site-entered' : 'site-locked'}`} onPointerMove={moveShapes}>
     <div className="ambient ambient-one" /><div className="ambient ambient-two" />
     {!gatewayOpen && <section className={`access-gateway ${gatewayLeaving ? 'gateway-leaving' : ''}`} aria-label="Enter NILAVUS">
       <div className="gateway-grid" aria-hidden="true" />
-      <div className="gateway-shapes" aria-hidden="true">
-        <span className="gate-circle gate-one" /><span className="gate-cross gate-two" /><span className="gate-triangle gate-three" /><span className="gate-square gate-four" />
-        <span className="gate-cross gate-five" /><span className="gate-circle gate-six" /><span className="gate-square gate-seven" /><span className="gate-triangle gate-eight" />
+      <div className="gateway-shapes" onPointerMove={moveGatewayShapes} onPointerLeave={resetGatewayShapes} aria-label="Interactive PlayStation shapes">
+        <span className="gate-circle gate-one" role="button" tabIndex={0} aria-label="Circle shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
+        <span className="gate-cross gate-two" role="button" tabIndex={0} aria-label="Cross shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
+        <span className="gate-triangle gate-three" role="button" tabIndex={0} aria-label="Triangle shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
+        <span className="gate-square gate-four" role="button" tabIndex={0} aria-label="Square shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
+        <span className="gate-cross gate-five" role="button" tabIndex={0} aria-label="Cross shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
+        <span className="gate-circle gate-six" role="button" tabIndex={0} aria-label="Circle shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
+        <span className="gate-square gate-seven" role="button" tabIndex={0} aria-label="Square shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
+        <span className="gate-triangle gate-eight" role="button" tabIndex={0} aria-label="Triangle shape" onPointerDown={pressGatewayShape} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playSound('shape'); } }} />
       </div>
       <div className="gateway-content">
         <img className="gateway-logo" src={`${import.meta.env.BASE_URL}n-logo.png`} alt="NILAVUS N" />

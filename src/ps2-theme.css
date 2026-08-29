@@ -506,6 +506,20 @@ main.offline-world::before {
   50% { transform: translate3d(-22px, 30px, 0) rotate(-8deg); }
 }
 
+@keyframes gateway-float-a {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+  25% { transform: translate3d(10vw, -12vh, 0) rotate(28deg); }
+  50% { transform: translate3d(-9vw, 10vh, 0) rotate(58deg); }
+  75% { transform: translate3d(7vw, 14vh, 0) rotate(82deg); }
+}
+
+@keyframes gateway-float-b {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(18deg); }
+  25% { transform: translate3d(-11vw, 11vh, 0) rotate(-12deg); }
+  50% { transform: translate3d(8vw, -13vh, 0) rotate(-42deg); }
+  75% { transform: translate3d(-7vw, -7vh, 0) rotate(-68deg); }
+}
+
 @keyframes about-float-a {
   0%, 100% { opacity: .48; transform: translate3d(0, 0, 0) rotate(0); filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 15px currentColor); }
   50% { opacity: .92; transform: translate3d(18px, -28px, 0) rotate(22deg); filter: drop-shadow(0 0 11px currentColor) drop-shadow(0 0 29px currentColor); }
@@ -1247,7 +1261,7 @@ body.about-active {
   position: absolute;
   inset: 0;
   z-index: 1;
-  pointer-events: none;
+  pointer-events: auto;
   opacity: .28;
   transform: translate3d(calc(var(--cursor-x) * .42), calc(var(--cursor-y) * .42), 0);
   transition: transform .55s cubic-bezier(.2,.7,.2,1);
@@ -1256,7 +1270,23 @@ body.about-active {
 .gateway-shapes > span {
   position: absolute;
   display: block;
-  filter: drop-shadow(0 0 9px currentColor);
+  pointer-events: auto;
+  cursor: pointer;
+  translate: var(--shape-near-x, 0px) var(--shape-near-y, 0px);
+  filter: drop-shadow(0 0 9px currentColor) drop-shadow(0 0 calc(var(--shape-near-glow, 0) * 26px) currentColor);
+  transition: translate .2s cubic-bezier(.2,.8,.2,1), filter .22s ease, opacity .22s ease, scale .22s ease;
+  outline: none;
+}
+
+.gateway-shapes > span:focus-visible {
+  opacity: 1;
+  filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 28px currentColor);
+}
+
+.gateway-shapes > span.shape-pressed {
+  opacity: 1;
+  scale: 1.3;
+  filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 36px currentColor);
 }
 
 .gate-circle { width: 52px; height: 52px; border: 2px solid #37bdf5; border-radius: 50%; }
@@ -1266,14 +1296,14 @@ body.about-active {
 .gate-cross { width: 56px; height: 56px; color: #8b74ff; }
 .gate-cross::before,.gate-cross::after { content: ""; position: absolute; top: 27px; left: 3px; width: 50px; height: 2px; background: currentColor; transform: rotate(45deg); }
 .gate-cross::after { transform: rotate(-45deg); }
-.gate-one { top: 13%; left: 10%; animation: shape-float-a 12s ease-in-out infinite; }
-.gate-two { top: 18%; right: 12%; animation: shape-float-b 15s ease-in-out -3s infinite; }
-.gate-three { bottom: 13%; left: 17%; animation: shape-float-b 13s ease-in-out -7s infinite; }
-.gate-four { right: 18%; bottom: 15%; animation: shape-float-a 17s ease-in-out -5s infinite; }
-.gate-five { left: 29%; top: 28%; transform: scale(.58); animation: shape-float-a 14s ease-in-out -9s infinite; }
-.gate-six { right: 31%; top: 31%; transform: scale(.55); animation: shape-float-b 16s ease-in-out -4s infinite; }
-.gate-seven { left: 8%; bottom: 38%; transform: rotate(18deg) scale(.48); animation: shape-float-a 18s ease-in-out -2s infinite; }
-.gate-eight { right: 8%; bottom: 39%; transform: scale(.48); animation: shape-float-b 13s ease-in-out -6s infinite; }
+.gate-one { top: 13%; left: 10%; animation: gateway-float-a 22s ease-in-out infinite; }
+.gate-two { top: 18%; right: 12%; animation: gateway-float-b 25s ease-in-out -3s infinite; }
+.gate-three { bottom: 13%; left: 17%; animation: gateway-float-b 23s ease-in-out -7s infinite; }
+.gate-four { right: 18%; bottom: 15%; animation: gateway-float-a 27s ease-in-out -5s infinite; }
+.gate-five { left: 29%; top: 28%; transform: scale(.58); animation: gateway-float-a 24s ease-in-out -9s infinite; }
+.gate-six { right: 31%; top: 31%; transform: scale(.55); animation: gateway-float-b 26s ease-in-out -4s infinite; }
+.gate-seven { left: 8%; bottom: 38%; transform: rotate(18deg) scale(.48); animation: gateway-float-a 28s ease-in-out -2s infinite; }
+.gate-eight { right: 8%; bottom: 39%; transform: scale(.48); animation: gateway-float-b 23s ease-in-out -6s infinite; }
 
 /* Denser, still restrained background symbol field */
 .shape-circle-two { top: 47%; left: 45%; width: 38px; height: 38px; opacity: .55; animation-delay: -4s; }
