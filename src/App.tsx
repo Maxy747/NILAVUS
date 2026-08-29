@@ -7,7 +7,7 @@ type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: n
 type HealthPayload = { nodes: Record<string, NodeMetrics | undefined> };
 type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home' | 'shape';
 
-const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ?? '').replace(/\/$/, '');
+const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'https://gibzoyvvmwvprkubfhvc.supabase.co/functions/v1').replace(/\/$/, '');
 const dosimeterMetricsUrl = 'https://nilavus.whydah-darter.ts.net:8443/api/node';
 const offlineHealth: HealthPayload = {
   nodes: {
@@ -188,28 +188,32 @@ export default function Home() {
   useEffect(() => {
     let active = true;
     const refresh = async () => {
+      let payload: HealthPayload = offlineHealth;
+      let hasLiveSource = false;
       try {
-        if (!functionsUrl) throw new Error('Telemetry is not configured');
         const response = await fetch(`${functionsUrl}/status`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Health endpoint unavailable');
-        const payload = normalizeHealth(await response.json() as HealthPayload);
-        // Dosimeter exposes a lightweight Funnel endpoint. It keeps its card
-        // current even when NASig or the cloud telemetry relay is unavailable.
-        try {
-          const direct = await fetch(dosimeterMetricsUrl, { cache: 'no-store' });
-          if (direct.ok) {
-            const node = await direct.json() as Omit<NodeMetrics, 'online' | 'receivedAt'>;
-            payload.nodes.nilavus = { ...node, online: true, receivedAt: new Date().toISOString() };
-          }
-        } catch {
-          // Supabase remains the fallback source when the Funnel is unavailable.
+        payload = normalizeHealth(await response.json() as HealthPayload);
+        hasLiveSource = true;
+      } catch {
+        // Dosimeter's direct Funnel check below remains available even if the
+        // cloud status endpoint is temporarily unreachable.
+      }
+      try {
+        const direct = await fetch(dosimeterMetricsUrl, { cache: 'no-store' });
+        if (direct.ok) {
+          const node = await direct.json() as Omit<NodeMetrics, 'online' | 'receivedAt'>;
+          payload = { ...payload, nodes: { ...payload.nodes, nilavus: { ...node, online: true, receivedAt: new Date().toISOString() } } };
+          hasLiveSource = true;
         }
+      } catch {
+        // Supabase remains the fallback source when the Funnel is unavailable.
+      }
+      if (hasLiveSource) {
         statusFailures.current = 0;
         if (active) setHealth(payload);
-      } catch {
+      } else {
         statusFailures.current += 1;
-        // Keep the last good snapshot through brief request/CORS hiccups. A
-        // sustained outage (three polls) still transitions to offline.
         if (active && statusFailures.current >= 3) setHealth(offlineHealth);
       }
     };
