@@ -5,7 +5,7 @@ type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
 type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean> };
 type HealthPayload = { nodes: Partial<Record<NodeName, NodeMetrics>> };
-type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back';
+type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about';
 
 const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ?? '').replace(/\/$/, '');
 const offlineHealth: HealthPayload = {
@@ -63,8 +63,9 @@ export default function Home() {
       toggle: 'audio/toggle.mp3',
       offline: 'audio/offline.mp3',
       back: 'audio/back.mp3',
+      about: 'audio/about.mp3',
     };
-    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26 };
+    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .32 };
 
     for (const [name, file] of Object.entries(soundFiles) as [SoundName, string][]) {
       const audio = new Audio(`${import.meta.env.BASE_URL}${file}`);
@@ -181,7 +182,7 @@ export default function Home() {
 
   const openAbout = () => {
     if (aboutOpen) return;
-    playSound('click');
+    playSound('about');
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setAboutLeaving(false);
     setAboutOpen(true);
