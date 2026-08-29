@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 
 type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
-type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean> };
-type HealthPayload = { nodes: Partial<Record<NodeName, NodeMetrics>> };
+type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean>; receivedAt?: string };
+type HealthPayload = { nodes: Record<string, NodeMetrics | undefined> };
 type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home';
 
 const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ?? '').replace(/\/$/, '');
@@ -37,13 +37,23 @@ const formatUptime = (seconds: number | null | undefined) => {
 
 const normalizeHealth = (payload: HealthPayload): HealthPayload => {
   const rawNodes = payload.nodes ?? {};
+  const nodes: Record<string, NodeMetrics | undefined> = { ...rawNodes };
+  for (const [name, node] of Object.entries(nodes)) {
+    if (!node) continue;
+    const receivedAt = Date.parse(String(node.receivedAt ?? ''));
+    // The Edge Function uses a 90-second cutoff. Allow a short additional
+    // window for delayed heartbeats so a healthy host does not flicker red.
+    if (!node.online && Number.isFinite(receivedAt) && Date.now() - receivedAt < 150_000) {
+      nodes[name] = { ...node, online: true };
+    }
+  }
   const laptopAliases = ['dosimeter', 'nilavus-laptop'] as const;
-  const alias = laptopAliases.map(name => rawNodes[name as NodeName]).find(Boolean);
-  const current = rawNodes.nilavus;
+  const alias = laptopAliases.map(name => nodes[name]).find(Boolean);
+  const current = nodes.nilavus;
   // Older telemetry agents identified the laptop by its local hostname. Keep
   // those heartbeats visible while the agent is being renamed to nilavus.
   const laptop = alias && (!current || (!current.online && alias.online)) ? alias : current;
-  return { ...payload, nodes: { ...rawNodes, nilavus: laptop ?? rawNodes.nilavus } };
+  return { ...payload, nodes: { ...nodes, nilavus: laptop ?? nodes.nilavus } };
 };
 
 export default function Home() {
@@ -59,6 +69,7 @@ export default function Home() {
   const modeAnimationTimer = useRef<number | null>(null);
   const audioRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({});
   const previousOffline = useRef(false);
+  const statusFailures = useRef(0);
   const allOffline = health !== null && (['nilavus', 'nilavus-storage'] as NodeName[]).every(nodeName => health.nodes[nodeName]?.online === false);
 
   const playSound = useCallback((name: SoundName) => {
@@ -153,8 +164,14 @@ export default function Home() {
         const response = await fetch(`${functionsUrl}/status`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Health endpoint unavailable');
         const payload = normalizeHealth(await response.json() as HealthPayload);
+        statusFailures.current = 0;
         if (active) setHealth(payload);
-      } catch { if (active) setHealth(offlineHealth); }
+      } catch {
+        statusFailures.current += 1;
+        // Keep the last good snapshot through brief request/CORS hiccups. A
+        // sustained outage (three polls) still transitions to offline.
+        if (active && statusFailures.current >= 3) setHealth(offlineHealth);
+      }
     };
     refresh();
     const timer = window.setInterval(refresh, 10_000);
