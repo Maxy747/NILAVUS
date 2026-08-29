@@ -222,6 +222,10 @@ main::before {
   box-shadow: inset 0 1px 0 #ffffff29, 0 24px 62px #00061599, 0 0 26px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
+.service-card {
+  animation: none;
+}
+
 .service-card:hover::before {
   opacity: 1;
   transform: translateX(38%);
