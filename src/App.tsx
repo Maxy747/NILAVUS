@@ -5,7 +5,7 @@ type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
 type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean> };
 type HealthPayload = { nodes: Partial<Record<NodeName, NodeMetrics>> };
-type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about';
+type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo';
 
 const functionsUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ?? '').replace(/\/$/, '');
 const offlineHealth: HealthPayload = {
@@ -64,8 +64,9 @@ export default function Home() {
       offline: 'audio/offline.mp3',
       back: 'audio/back.mp3',
       about: 'audio/about.mp3',
+      logo: 'audio/logo-spin.mp3',
     };
-    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .32 };
+    const volumes: Record<SoundName, number> = { intro: .42, hover: .16, click: .22, toggle: .32, offline: .4, back: .26, about: .32, logo: .34 };
 
     for (const [name, file] of Object.entries(soundFiles) as [SoundName, string][]) {
       const audio = new Audio(`${import.meta.env.BASE_URL}${file}`);
@@ -162,7 +163,7 @@ export default function Home() {
   };
 
   const animateLogo = () => {
-    playSound('click');
+    playSound('logo');
     setLogoActive(false);
     window.requestAnimationFrame(() => setLogoActive(true));
     window.setTimeout(() => setLogoActive(false), 1900);
