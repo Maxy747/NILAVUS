@@ -157,6 +157,8 @@ main::before {
 .health-card {
   position: relative;
   padding: 0;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
   perspective: 1200px;
   cursor: pointer;
   user-select: none;
@@ -165,7 +167,13 @@ main::before {
 
 .health-card-flip {
   position: relative;
-  min-height: 218px;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: inherit;
   transform-style: preserve-3d;
   filter: drop-shadow(0 0 0 transparent);
   transition: transform .52s cubic-bezier(.2,.78,.2,1), filter .52s ease;
@@ -178,8 +186,14 @@ main::before {
 }
 
 .health-face {
-  min-height: 218px;
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   padding: 22px;
+  overflow: hidden;
+  border-radius: inherit;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -190,13 +204,10 @@ main::before {
 }
 
 .health-back {
-  position: absolute;
-  inset: 0;
+  position: relative;
   z-index: 2;
   display: grid;
   place-items: center;
-  overflow: hidden;
-  border-radius: inherit;
   background:
     radial-gradient(circle at 50% 45%, #2146753d 0, transparent 58%),
     linear-gradient(145deg, #0c192cbf, #040914e8);
@@ -682,7 +693,7 @@ main.offline-world::before {
   .ps-shapes { opacity: .14; }
   .service-card:hover { transform: translateY(-5px) scale(1.018); }
   .health-card-flip,
-  .health-face { min-height: 292px; }
+  .health-face { min-height: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
