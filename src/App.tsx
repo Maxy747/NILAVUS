@@ -322,6 +322,7 @@ export default function Home() {
             <div className="underhood-smb"><span>SMB</span><small>/mnt/nas · /mnt/bookus</small><i aria-hidden="true">↔</i><small>media · photos · books · music · files</small></div>
           </div>
         </section>
+        <div className="about-rule" />
         <div className="about-mark"><strong>NILAVUS</strong><span>LOCAL • PRIVATE • PERSONAL</span></div>
         <button className="about-access" type="button" onClick={returnToAccess}>HOME</button>
       </article>
