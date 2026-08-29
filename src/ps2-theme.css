@@ -1124,8 +1124,10 @@ body.about-active {
 
 .about-mark {
   display: grid;
+  justify-items: center;
   gap: 14px;
   margin-top: clamp(90px, 14vw, 150px);
+  text-align: center;
 }
 
 .about-mark strong {
