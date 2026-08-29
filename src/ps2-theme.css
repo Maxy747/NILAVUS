@@ -898,6 +898,36 @@ body.about-active {
   letter-spacing: .28em;
 }
 
+.about-access {
+  display: block;
+  min-width: min(270px, 72vw);
+  margin: clamp(54px, 8vw, 86px) auto 0;
+  padding: 15px 34px;
+  border: 1px solid #63d5ff8a;
+  border-radius: 999px;
+  color: #eaf7ff;
+  background: linear-gradient(135deg, #10294a, #090d1a);
+  box-shadow: 0 0 20px #3bbdff35, inset 0 0 18px #3bbdff14;
+  cursor: pointer;
+  font: 800 12px/1 var(--mono);
+  letter-spacing: .34em;
+  text-indent: .34em;
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease, background .25s ease;
+}
+
+.about-access:hover,
+.about-access:focus-visible {
+  border-color: #b6edff;
+  background: linear-gradient(135deg, #1d4f7f, #101a32);
+  box-shadow: 0 0 34px #3bbdff7a, inset 0 0 22px #3bbdff2b;
+  transform: translateY(-3px) scale(1.03);
+  outline: none;
+}
+
+.about-access:active {
+  transform: translateY(0) scale(.98);
+}
+
 .about-shapes {
   position: fixed;
   inset: 0;

@@ -216,6 +216,19 @@ export default function Home() {
     }, 650);
   };
 
+  const returnToAccess = () => {
+    if (aboutLeaving) return;
+    playSound('back');
+    setAboutLeaving(true);
+    window.setTimeout(() => {
+      setAboutOpen(false);
+      setAboutLeaving(false);
+      setGatewayLeaving(false);
+      setGatewayOpen(false);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }, 650);
+  };
+
   const moveShapes = (event: ReactPointerEvent<HTMLElement>) => {
     const x = (event.clientX / window.innerWidth - .5) * 34;
     const y = (event.clientY / window.innerHeight - .5) * 28;
@@ -254,6 +267,7 @@ export default function Home() {
         <div className="about-rule" />
         <ol className="about-index"><li>STORAGE</li><li>MEDIA</li><li>PHOTOS</li><li>BOOKS</li><li>MUSIC</li></ol>
         <div className="about-mark"><strong>NILAVUS</strong><span>LOCAL • PRIVATE • PERSONAL</span></div>
+        <button className="about-access" type="button" onClick={returnToAccess}>ACCESS</button>
       </article>
     </section>, document.body)}
     <div className="ps-shapes" aria-hidden="true">
