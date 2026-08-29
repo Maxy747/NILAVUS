@@ -138,16 +138,20 @@ main::before {
   border-radius: inherit;
   pointer-events: none;
   will-change: opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .health-card.online::before {
-  box-shadow: 0 0 28px #55e89672;
-  animation: health-online-breathe 4.8s cubic-bezier(.45,0,.55,1) infinite;
+  border: 1px solid #55e8968a;
+  box-shadow: 0 0 20px #55e89666;
+  animation: health-online-breathe 5.8s ease-in-out infinite alternate both;
 }
 
 .health-card.offline::before {
-  box-shadow: 0 0 34px #ff27448c;
-  animation: health-offline-glow 3.2s cubic-bezier(.45,0,.55,1) infinite;
+  border: 1px solid #ff526da6;
+  box-shadow: 0 0 24px #ff27447d;
+  animation: health-offline-glow 4s ease-in-out infinite alternate both;
 }
 
 .connection-panel {
@@ -442,13 +446,13 @@ main.offline-world::before {
 }
 
 @keyframes health-offline-glow {
-  0%,100% { opacity: .24; }
-  50% { opacity: .82; }
+  from { opacity: .22; }
+  to { opacity: .78; }
 }
 
 @keyframes health-online-breathe {
-  0%,100% { opacity: .16; }
-  50% { opacity: .58; }
+  from { opacity: .14; }
+  to { opacity: .52; }
 }
 
 @keyframes logo-orbit {
