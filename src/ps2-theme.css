@@ -224,15 +224,31 @@ main::before {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  overflow: hidden;
 }
 
 .health-drive-panel .drive-panel-heading { margin-bottom: 14px; }
 .health-drive-panel .drive-grid {
+  width: 100%;
+  min-width: 0;
   flex: 1;
   align-content: space-evenly;
   row-gap: 12px;
 }
-.health-drive-panel .drive-item { padding: 4px 0; }
+.health-drive-panel .drive-item {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px 0;
+  overflow: hidden;
+}
+.health-drive-panel .drive-line,
+.health-drive-panel .drive-capacity,
+.health-drive-panel .drive-bar {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
 .health-drive-panel .drive-panel-heading > span { font-size: 10.5px; }
 .health-drive-panel .drive-panel-heading > small { font-size: 9.5px; }
 .health-drive-panel .drive-line strong { font-size: 13px; }
@@ -304,7 +320,25 @@ main::before {
   .drive-panel { padding: 14px; }
   .health-drive-panel {
     min-height: 272px;
-    padding: 22px;
+    padding: 18px;
+  }
+  .health-drive-panel .drive-panel-heading {
+    width: 100%;
+    gap: 12px;
+  }
+  .health-drive-panel .drive-panel-heading > span,
+  .health-drive-panel .drive-panel-heading > small {
+    min-width: 0;
+    max-width: 50%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    letter-spacing: .12em;
+  }
+  .health-drive-panel .drive-panel-heading > span { font-size: 9px; }
+  .health-drive-panel .drive-panel-heading > small {
+    font-size: 8px;
+    text-align: right;
   }
   .drive-line strong { font-size: 10px; }
   .drive-capacity small { font-size: 7px; }
