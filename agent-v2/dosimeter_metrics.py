@@ -36,6 +36,22 @@ def temperature_c():
     return round(max(readings), 1) if readings else None
 
 
+def drive_metric(name, path):
+    try:
+        if not os.path.ismount(path):
+            raise OSError(f"{path} is not mounted")
+        usage = shutil.disk_usage(path)
+        return {
+            "name": name,
+            "online": True,
+            "usedPercent": round(100 * usage.used / usage.total, 1) if usage.total else None,
+            "usedBytes": usage.used,
+            "totalBytes": usage.total,
+        }
+    except OSError:
+        return {"name": name, "online": False, "usedPercent": None, "usedBytes": None, "totalBytes": None}
+
+
 def metrics():
     total_before, idle_before = cpu_snapshot()
     time.sleep(0.2)
@@ -61,6 +77,7 @@ def metrics():
             "kavita": port_open(5000),
             "navidrome": port_open(4533),
             "ubuntu": port_open(9090),
+            "_drives": [drive_metric("Dosimeter", "/")],
         },
     }
 

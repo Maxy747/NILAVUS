@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 
 type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
-type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean>; receivedAt?: string };
+type DriveMetric = { name: string; online: boolean; usedPercent: number | null; usedBytes?: number | null; totalBytes?: number | null };
+type NodeMetrics = { online: boolean; temperatureC: number | null; cpuPercent: number | null; memoryPercent: number | null; diskPercent: number | null; uptimeSeconds: number | null; load: number[]; services: Record<string, boolean | DriveMetric[]>; drives?: DriveMetric[]; receivedAt?: string };
 type HealthPayload = { nodes: Record<string, NodeMetrics | undefined> };
 type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home' | 'shape';
 
@@ -28,6 +29,14 @@ const services = {
 
 const displayUrl = (url: string | null) => url ? url.replace(/^https?:\/\//, '').replace(/\/$/, '') : 'Remote link not configured';
 const formatMetric = (value: number | null | undefined, suffix = '%') => value == null ? '—' : `${Math.round(value)}${suffix}`;
+const formatBytes = (value: number | null | undefined) => {
+  if (value == null || !Number.isFinite(value)) return '—';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let amount = value;
+  let unit = 0;
+  while (amount >= 1000 && unit < units.length - 1) { amount /= 1000; unit += 1; }
+  return `${amount >= 100 || unit === 0 ? Math.round(amount) : amount.toFixed(1)} ${units[unit]}`;
+};
 const formatUptime = (seconds: number | null | undefined) => {
   if (seconds == null) return '—';
   const days = Math.floor(seconds / 86400);
@@ -40,6 +49,8 @@ const normalizeHealth = (payload: HealthPayload): HealthPayload => {
   const nodes: Record<string, NodeMetrics | undefined> = { ...rawNodes };
   for (const [name, node] of Object.entries(nodes)) {
     if (!node) continue;
+    const embeddedDrives = node.services?._drives;
+    if (!node.drives && Array.isArray(embeddedDrives)) nodes[name] = { ...node, drives: embeddedDrives };
     const receivedAt = Date.parse(String(node.receivedAt ?? ''));
     // The Edge Function uses a 90-second cutoff. Allow a short additional
     // window for delayed heartbeats so a healthy host does not flicker red.
@@ -73,6 +84,12 @@ export default function Home() {
   const previousOffline = useRef(false);
   const statusFailures = useRef(0);
   const allOffline = health !== null && (['nilavus', 'nilavus-storage'] as NodeName[]).every(nodeName => health.nodes[nodeName]?.online === false);
+  const driveDefinitions = [
+    { name: 'Dosimeter', host: 'nilavus' as NodeName },
+    { name: 'NASig', host: 'nilavus-storage' as NodeName },
+    { name: 'Bookussy', host: 'nilavus-storage' as NodeName },
+    { name: 'WD 1 TB', host: 'nilavus-storage' as NodeName },
+  ];
 
   const playSound = useCallback((name: SoundName) => {
     const audio = audioRef.current[name];
@@ -451,7 +468,25 @@ export default function Home() {
         </div>
         <div className="hero-copy">
           <div><p className="eyebrow">PERSONAL CLOUD</p><h1><span className="hero-line hero-line-one">Your media.</span><span className="hero-line hero-line-two"><em>Your space.</em></span></h1></div>
-          <div className="connection-panel"><p>CONNECTION</p><div className={`mode-toggle mode-${mode}`} role="group" aria-label="Connection mode"><span className="toggle-glider" aria-hidden="true" /><button type="button" aria-pressed={mode === 'lan'} className={mode === 'lan' ? 'active' : ''} onClick={() => chooseMode('lan')}><span>LAN</span></button><button type="button" aria-pressed={mode === 'remote'} className={mode === 'remote' ? 'active' : ''} onClick={() => chooseMode('remote')}><span>Remote</span></button></div><div className="connection-detail"><i />{mode === 'lan' ? 'Direct • Local network' : 'Remote • Tailscale services'}</div></div>
+          <div className="hero-controls">
+            <section className="drive-panel" aria-label="Storage drive health">
+              <div className="drive-panel-heading"><span>STORAGE</span><small>LIVE CAPACITY</small></div>
+              <div className="drive-grid">{driveDefinitions.map(definition => {
+                const node = health?.nodes[definition.host];
+                const drive = node?.drives?.find(item => item.name.toLowerCase() === definition.name.toLowerCase());
+                const state = !health || (node?.online && !drive) ? 'checking' : node?.online && drive?.online ? 'online' : 'offline';
+                const used = drive?.usedPercent == null ? null : Math.max(0, Math.min(100, drive.usedPercent));
+                const level = used == null ? 'unknown' : used >= 90 ? 'critical' : used >= 75 ? 'warning' : 'healthy';
+                const capacity = drive?.usedBytes != null && drive?.totalBytes != null ? `${formatBytes(drive.usedBytes)} / ${formatBytes(drive.totalBytes)}` : used == null ? 'Waiting for telemetry' : `${Math.round(used)}% used`;
+                return <article className={`drive-item ${state} ${level}`} key={definition.name}>
+                  <div className="drive-line"><strong>{definition.name}</strong><span><i />{state === 'checking' ? '—' : state}</span></div>
+                  <div className="drive-capacity"><small>{capacity}</small><b>{used == null ? '—' : `${Math.round(used)}%`}</b></div>
+                  <div className="drive-bar" role="meter" aria-label={`${definition.name} capacity used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={used ?? undefined}><span style={{ width: `${used ?? 0}%` }} /></div>
+                </article>;
+              })}</div>
+            </section>
+            <div className="connection-panel"><p>CONNECTION</p><div className={`mode-toggle mode-${mode}`} role="group" aria-label="Connection mode"><span className="toggle-glider" aria-hidden="true" /><button type="button" aria-pressed={mode === 'lan'} className={mode === 'lan' ? 'active' : ''} onClick={() => chooseMode('lan')}><span>LAN</span></button><button type="button" aria-pressed={mode === 'remote'} className={mode === 'remote' ? 'active' : ''} onClick={() => chooseMode('remote')}><span>Remote</span></button></div><div className="connection-detail"><i />{mode === 'lan' ? 'Direct • Local network' : 'Remote • Tailscale services'}</div></div>
+          </div>
         </div>
       </header>
 
