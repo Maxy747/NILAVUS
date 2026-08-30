@@ -1,0 +1,11 @@
+[Unit]
+Description=Publish independent Dosimeter telemetry every 30 seconds
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=30s
+AccuracySec=2s
+Unit=nilavu-dosimeter-cloud.service
+
+[Install]
+WantedBy=timers.target
