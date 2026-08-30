@@ -17,4 +17,5 @@ install -m 0644 /tmp/nilavu-dosimeter-metrics.service /etc/systemd/system/nilavu
 
 systemctl daemon-reload
 systemctl enable --now nilavu-dosimeter-metrics.service
-echo "Dosimeter cloud sender disabled; LAN metrics available on port 8765."
+echo "Dosimeter LAN metrics are available on port 8765."
+echo "NASig's nilavu-dosimeter-forward timer must be active for cloud status."

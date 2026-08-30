@@ -11,6 +11,7 @@ install -m 0644 /tmp/nilavu-dosimeter-forward.service /etc/systemd/system/nilavu
 install -m 0644 /tmp/nilavu-dosimeter-forward.timer /etc/systemd/system/nilavu-dosimeter-forward.timer
 
 systemctl daemon-reload
-systemctl enable --now nilavu-dosimeter-forward.timer
+systemctl enable nilavu-dosimeter-forward.timer
+systemctl restart nilavu-dosimeter-forward.timer
 systemctl start nilavu-dosimeter-forward.service
 echo "NASig is now forwarding Dosimeter telemetry."

@@ -14,8 +14,9 @@ SECRET = os.environ.get("NILAVU_TELEMETRY_SECRET", "")
 
 DRIVES = (
     ("NASig", "/"),
-    ("Bookussy", "/srv/dev-disk-by-uuid-dc93b7a1-cadf-4fff-b3e1-78b1c94b5a6d"),
-    ("WD 1 TB", "/srv/dev-disk-by-uuid-D67639F77639D947"),
+    # dc93... is the 1 TB WD volume; D676... is the 4 TB Bookussy volume.
+    ("WD 1 TB", "/srv/dev-disk-by-uuid-dc93b7a1-cadf-4fff-b3e1-78b1c94b5a6d"),
+    ("Bookussy", "/srv/dev-disk-by-uuid-D67639F77639D947"),
 )
 
 
