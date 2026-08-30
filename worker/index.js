@@ -16,7 +16,7 @@ export default {
       }
 
       try {
-        const upstream = await fetch('https://nilavus.whydah-darter.ts.net:10000/api/node', {
+        const upstream = await fetch('https://nilavus.whydah-darter.ts.net/api/node', {
           headers: { Accept: 'application/json' },
           cf: { cacheTtl: 0, cacheEverything: false },
         });
