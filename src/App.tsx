@@ -464,6 +464,7 @@ export default function Home() {
       <header className="hero">
         <div className="topline">
           <div className="brand"><button className={`brand-trigger ${logoActive ? 'logo-active' : ''}`} type="button" onClick={animateLogo} aria-label="Animate NILAVUS logo"><img className="brand-logo" src={`${import.meta.env.BASE_URL}n-logo.png`} alt="NILAVUS" /></button><span className="brand-word">NILAVUS</span></div>
+          <div className="node-statuses header-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
         </div>
         <div className="hero-copy">
           <div><p className="eyebrow">PERSONAL CLOUD</p><h1><span className="hero-line hero-line-one">Your media.</span><span className="hero-line hero-line-two"><em>Your space.</em></span></h1></div>
@@ -504,7 +505,6 @@ export default function Home() {
           </article>;
         })}</div>
         <section className="drive-panel health-drive-panel" aria-label="Storage drive health">
-          <div className="node-statuses drive-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
           <div className="drive-panel-heading"><span>STORAGE</span><small>LIVE CAPACITY</small></div>
           <div className="drive-grid">{driveDefinitions.map(definition => {
             const node = health?.nodes[definition.host];

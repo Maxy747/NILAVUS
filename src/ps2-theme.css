@@ -65,6 +65,10 @@ main::before {
   font-size: 8px;
 }
 
+.header-node-statuses .status {
+  font-size: 8px;
+}
+
 .hero::after {
   content: "";
   position: absolute;
@@ -212,12 +216,6 @@ main::before {
   justify-content: center;
 }
 
-.health-drive-panel .drive-node-statuses .status { font-size: 9px; }
-.health-drive-panel .drive-node-statuses .status span {
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-}
 .health-drive-panel .drive-panel-heading > span { font-size: 10.5px; }
 .health-drive-panel .drive-panel-heading > small { font-size: 9.5px; }
 .health-drive-panel .drive-line strong { font-size: 13px; }
@@ -240,21 +238,6 @@ main::before {
 }
 
 .drive-panel-heading { margin-bottom: 9px; }
-.drive-node-statuses {
-  width: 100%;
-  max-width: none;
-  justify-content: center;
-  gap: 13px;
-  margin: -2px 0 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #7799bd1f;
-}
-.drive-node-statuses .status { font-size: 6.5px; }
-.drive-node-statuses .status span {
-  width: 5px;
-  height: 5px;
-  margin-right: 5px;
-}
 .drive-panel-heading > span,
 .drive-panel-heading > small {
   font-family: var(--font-geist-mono), monospace;
