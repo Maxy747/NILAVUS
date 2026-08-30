@@ -468,23 +468,6 @@ export default function Home() {
         <div className="hero-copy">
           <div><p className="eyebrow">PERSONAL CLOUD</p><h1><span className="hero-line hero-line-one">Your media.</span><span className="hero-line hero-line-two"><em>Your space.</em></span></h1></div>
           <div className="hero-controls">
-            <section className="drive-panel" aria-label="Storage drive health">
-              <div className="node-statuses drive-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
-              <div className="drive-panel-heading"><span>STORAGE</span><small>LIVE CAPACITY</small></div>
-              <div className="drive-grid">{driveDefinitions.map(definition => {
-                const node = health?.nodes[definition.host];
-                const drive = node?.drives?.find(item => item.name.toLowerCase() === definition.name.toLowerCase());
-                const state = !health || (node?.online && !drive) ? 'checking' : node?.online && drive?.online ? 'online' : 'offline';
-                const used = drive?.usedPercent == null ? null : Math.max(0, Math.min(100, drive.usedPercent));
-                const level = used == null ? 'unknown' : used >= 90 ? 'critical' : used >= 75 ? 'warning' : 'healthy';
-                const capacity = drive?.usedBytes != null && drive?.totalBytes != null ? `${formatBytes(drive.usedBytes)} / ${formatBytes(drive.totalBytes)}` : used == null ? 'Waiting for telemetry' : `${Math.round(used)}% used`;
-                return <article className={`drive-item ${state} ${level}`} key={definition.name}>
-                  <div className="drive-line"><strong>{definition.name}</strong><span><i />{state === 'checking' ? '—' : state}</span></div>
-                  <div className="drive-capacity"><small>{capacity}</small><b>{used == null ? '—' : `${Math.round(used)}%`}</b></div>
-                  <div className="drive-bar" role="meter" aria-label={`${definition.name} capacity used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={used ?? undefined}><span style={{ width: `${used ?? 0}%` }} /></div>
-                </article>;
-              })}</div>
-            </section>
             <div className="connection-panel"><p>CONNECTION</p><div className={`mode-toggle mode-${mode}`} role="group" aria-label="Connection mode"><span className="toggle-glider" aria-hidden="true" /><button type="button" aria-pressed={mode === 'lan'} className={mode === 'lan' ? 'active' : ''} onClick={() => chooseMode('lan')}><span>LAN</span></button><button type="button" aria-pressed={mode === 'remote'} className={mode === 'remote' ? 'active' : ''} onClick={() => chooseMode('remote')}><span>Remote</span></button></div><div className="connection-detail"><i />{mode === 'lan' ? 'Direct • Local network' : 'Remote • Tailscale services'}</div></div>
           </div>
         </div>
@@ -520,6 +503,23 @@ export default function Home() {
             </div>
           </article>;
         })}</div>
+        <section className="drive-panel health-drive-panel" aria-label="Storage drive health">
+          <div className="node-statuses drive-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
+          <div className="drive-panel-heading"><span>STORAGE</span><small>LIVE CAPACITY</small></div>
+          <div className="drive-grid">{driveDefinitions.map(definition => {
+            const node = health?.nodes[definition.host];
+            const drive = node?.drives?.find(item => item.name.toLowerCase() === definition.name.toLowerCase());
+            const state = !health || (node?.online && !drive) ? 'checking' : node?.online && drive?.online ? 'online' : 'offline';
+            const used = drive?.usedPercent == null ? null : Math.max(0, Math.min(100, drive.usedPercent));
+            const level = used == null ? 'unknown' : used >= 90 ? 'critical' : used >= 75 ? 'warning' : 'healthy';
+            const capacity = drive?.usedBytes != null && drive?.totalBytes != null ? `${formatBytes(drive.usedBytes)} / ${formatBytes(drive.totalBytes)}` : used == null ? 'Waiting for telemetry' : `${Math.round(used)}% used`;
+            return <article className={`drive-item ${state} ${level}`} key={definition.name}>
+              <div className="drive-line"><strong>{definition.name}</strong><span><i />{state === 'checking' ? '—' : state}</span></div>
+              <div className="drive-capacity"><small>{capacity}</small><b>{used == null ? '—' : `${Math.round(used)}%`}</b></div>
+              <div className="drive-bar" role="meter" aria-label={`${definition.name} capacity used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={used ?? undefined}><span style={{ width: `${used ?? 0}%` }} /></div>
+            </article>;
+          })}</div>
+        </section>
       </section>
 
       <section className="kinetic-signature" aria-label="Nilavus signature">

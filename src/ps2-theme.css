@@ -179,7 +179,7 @@ main::before {
   top: 18px;
 }
 
-/* Compact per-drive telemetry between node status and connection controls. */
+/* Compact per-drive telemetry. */
 .hero-controls {
   display: grid;
   gap: 12px;
@@ -199,6 +199,17 @@ main::before {
   background: rgba(10, 21, 37, .72);
   box-shadow: 0 14px 38px rgba(0, 0, 0, .2);
   backdrop-filter: blur(16px);
+}
+
+.health-drive-panel {
+  width: calc((100% - 15px) / 2);
+  min-height: 220px;
+  margin: 18px auto 0;
+  padding: 22px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .drive-panel-heading,
@@ -262,13 +273,19 @@ main::before {
 @media (max-width: 760px) {
   .topline .brand { top: 12px; }
   .hero-controls { gap: 14px; }
-  .drive-panel { order: 1; }
-  .hero-controls .connection-panel { order: 2; }
+  .health-drive-panel {
+    width: 100%;
+    min-height: 242px;
+  }
 }
 
 @media (max-width: 430px) {
   .drive-grid { grid-template-columns: 1fr; }
   .drive-panel { padding: 14px; }
+  .health-drive-panel {
+    min-height: 272px;
+    padding: 22px;
+  }
   .drive-line strong { font-size: 10px; }
   .drive-capacity small { font-size: 7px; }
 }
