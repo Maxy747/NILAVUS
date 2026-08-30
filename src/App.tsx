@@ -526,6 +526,7 @@ export default function Home() {
         <button className="kinetic-word" type="button" onClick={openAbout} aria-label="Open the secret NILAVUS about page">NILAVUS<sup>®</sup></button>
       </section>
 
+      <div className="node-statuses footer-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
       <footer><span>Made by MoeLustHer</span><span>Nilavu Systems</span><span>Secured with Tailscale</span><span>{visitorCount == null ? 'Visitors today —' : `${visitorCount} visitor${visitorCount === 1 ? '' : 's'} today`}</span></footer>
     </section>
   </main>;

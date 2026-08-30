@@ -50,7 +50,19 @@ main::before {
 
 .kinetic-signature {
   padding-bottom: clamp(44px, 5vw, 64px);
-  margin-bottom: 38px;
+  margin-bottom: 0;
+}
+
+.footer-node-statuses {
+  width: 100%;
+  max-width: none;
+  justify-content: center;
+  gap: 24px;
+  padding: 19px 0 15px;
+}
+
+.footer-node-statuses .status {
+  font-size: 8px;
 }
 
 .hero::after {
