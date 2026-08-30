@@ -66,7 +66,17 @@ main::before {
 }
 
 .header-node-statuses .status {
-  font-size: 8px;
+  font-size: 9px;
+}
+
+.header-node-statuses .status span {
+  width: 8px;
+  height: 8px;
+}
+
+.header-node-statuses {
+  position: relative;
+  top: 18px;
 }
 
 .hero::after {
@@ -213,9 +223,16 @@ main::before {
   border-radius: 18px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
+.health-drive-panel .drive-panel-heading { margin-bottom: 14px; }
+.health-drive-panel .drive-grid {
+  flex: 1;
+  align-content: space-evenly;
+  row-gap: 12px;
+}
+.health-drive-panel .drive-item { padding: 4px 0; }
 .health-drive-panel .drive-panel-heading > span { font-size: 10.5px; }
 .health-drive-panel .drive-panel-heading > small { font-size: 9.5px; }
 .health-drive-panel .drive-line strong { font-size: 13px; }
@@ -274,6 +291,7 @@ main::before {
 
 @media (max-width: 760px) {
   .topline .brand { top: 12px; }
+  .header-node-statuses { top: 12px; }
   .hero-controls { gap: 14px; }
   .health-drive-panel {
     width: 100%;
