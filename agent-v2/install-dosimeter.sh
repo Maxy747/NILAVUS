@@ -16,6 +16,7 @@ install -m 0755 /tmp/dosimeter_metrics.py /opt/nilavu-dashboard/dosimeter_metric
 install -m 0644 /tmp/nilavu-dosimeter-metrics.service /etc/systemd/system/nilavu-dosimeter-metrics.service
 
 systemctl daemon-reload
-systemctl enable --now nilavu-dosimeter-metrics.service
+systemctl enable nilavu-dosimeter-metrics.service
+systemctl restart nilavu-dosimeter-metrics.service
 echo "Dosimeter LAN metrics are available on port 8765."
 echo "NASig's nilavu-dosimeter-forward timer must be active for cloud status."
