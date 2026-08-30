@@ -7,6 +7,36 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (url.pathname === '/live-status') {
+      if (request.method !== 'GET') {
+        return new Response(JSON.stringify({ error: 'method not allowed' }), {
+          status: 405,
+          headers: { ...responseHeaders, Allow: 'GET', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+
+      try {
+        const upstream = await fetch('https://nilavus.whydah-darter.ts.net:10000/api/node', {
+          headers: { Accept: 'application/json' },
+          cf: { cacheTtl: 0, cacheEverything: false },
+        });
+        if (!upstream.ok) throw new Error(`metrics upstream returned ${upstream.status}`);
+        const node = await upstream.json();
+        return new Response(JSON.stringify({
+          ...node,
+          online: true,
+          receivedAt: new Date().toISOString(),
+        }), {
+          headers: { ...responseHeaders, 'Access-Control-Allow-Origin': '*' },
+        });
+      } catch {
+        return new Response(JSON.stringify({ error: 'live metrics unavailable' }), {
+          status: 502,
+          headers: { ...responseHeaders, 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+    }
+
     if (url.pathname !== '/heartbeat') {
       return env.ASSETS.fetch(request);
     }
