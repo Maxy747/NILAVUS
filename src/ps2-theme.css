@@ -212,6 +212,25 @@ main::before {
   justify-content: center;
 }
 
+.health-drive-panel .drive-node-statuses .status { font-size: 9px; }
+.health-drive-panel .drive-node-statuses .status span {
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+}
+.health-drive-panel .drive-panel-heading > span { font-size: 10.5px; }
+.health-drive-panel .drive-panel-heading > small { font-size: 9.5px; }
+.health-drive-panel .drive-line strong { font-size: 13px; }
+.health-drive-panel .drive-line > span { font-size: 8.5px; }
+.health-drive-panel .drive-line i {
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+}
+.health-drive-panel .drive-capacity small { font-size: 9px; }
+.health-drive-panel .drive-capacity b { font-size: 9.5px; }
+.health-drive-panel .drive-bar { height: 4px; }
+
 .drive-panel-heading,
 .drive-line,
 .drive-capacity {
