@@ -180,6 +180,13 @@ main::before {
   gap: 12px;
 }
 
+@media (min-width: 761px) {
+  .hero-copy {
+    align-items: center;
+    padding-top: 34px;
+  }
+}
+
 .drive-panel {
   padding: 13px 14px;
   border: 1px solid rgba(132, 164, 204, .18);
