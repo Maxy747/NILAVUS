@@ -5,12 +5,16 @@ import json
 import os
 import shutil
 import sys
+import time
 import urllib.request
+import urllib.error
 
 
 METRICS_URL = os.environ.get("NILAVU_LOCAL_METRICS_URL", "http://127.0.0.1:8765/api/node")
 HEARTBEAT_URL = os.environ.get("NILAVU_HEARTBEAT_URL", "")
 SECRET = os.environ.get("NILAVU_TELEMETRY_SECRET", "")
+INTERVAL_SECONDS = max(10, int(os.environ.get("NILAVU_TELEMETRY_INTERVAL", "30")))
+RETRY_SECONDS = max(5, int(os.environ.get("NILAVU_TELEMETRY_RETRY", "10")))
 
 DRIVES = (
     ("NASig", "/"),
@@ -48,12 +52,11 @@ def drive_metric(name: str, path: str) -> dict:
         }
 
 
-def main() -> int:
-    if not HEARTBEAT_URL or not SECRET:
-        print("NILAVU_HEARTBEAT_URL and NILAVU_TELEMETRY_SECRET are required", file=sys.stderr)
-        return 2
-
+def publish_once() -> None:
+    """Collect and publish one fresh NAS heartbeat."""
     metrics = request_json(METRICS_URL)
+    # Never let an old/incorrect local identity overwrite the NAS node.
+    metrics["nodeName"] = "nilavus-storage"
     services = metrics.setdefault("services", {})
     services["_drives"] = [drive_metric(name, path) for name, path in DRIVES]
 
@@ -62,7 +65,23 @@ def main() -> int:
         data=json.dumps(metrics).encode("utf-8"),
         headers={"Authorization": f"Bearer {SECRET}", "Content-Type": "application/json"},
     )
-    return 0
+
+
+def main() -> int:
+    if not HEARTBEAT_URL or not SECRET:
+        print("NILAVU_HEARTBEAT_URL and NILAVU_TELEMETRY_SECRET are required", file=sys.stderr)
+        return 2
+
+    # Stay alive through router, DNS, WAN, and local metrics restarts. systemd
+    # also supervises this process, so an unexpected crash is restarted.
+    while True:
+        try:
+            publish_once()
+            print("nilavus-storage heartbeat published", flush=True)
+            time.sleep(INTERVAL_SECONDS)
+        except (OSError, ValueError, json.JSONDecodeError, urllib.error.URLError) as error:
+            print(f"heartbeat unavailable; retrying in {RETRY_SECONDS}s: {error}", file=sys.stderr, flush=True)
+            time.sleep(RETRY_SECONDS)
 
 
 if __name__ == "__main__":

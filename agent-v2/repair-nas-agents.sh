@@ -4,15 +4,19 @@ set -eu
 base_url="https://raw.githubusercontent.com/Maxy747/NILAVUS/main/agent-v2"
 
 curl -4 -fsSL "$base_url/storage_telemetry_push.py" -o /tmp/storage_telemetry_push.py
-install -m 0755 /tmp/storage_telemetry_push.py /opt/nilavu-dashboard/telemetry_push.py
+install -m 0755 /tmp/storage_telemetry_push.py /opt/nilavu-dashboard/storage_telemetry_push.py
 
-curl -4 -fsSL "$base_url/install-nas-forward.sh" -o /tmp/install-nas-forward.sh
-sh /tmp/install-nas-forward.sh
+curl -4 -fsSL "$base_url/nilavu-storage-telemetry.service" -o /tmp/nilavu-storage-telemetry.service
+install -m 0644 /tmp/nilavu-storage-telemetry.service /etc/systemd/system/nilavu-storage-telemetry.service
 
-curl -4 -fsS --max-time 8 http://192.168.1.72:8765/api/node >/dev/null
+# Remove the legacy cross-host publisher. Each server now owns its heartbeat,
+# so restarting NASig cannot change the nilavus laptop status.
+systemctl disable --now nilavu-dosimeter-forward.timer 2>/dev/null || true
+systemctl stop nilavu-dosimeter-forward.service 2>/dev/null || true
+systemctl disable --now nilavu-telemetry.timer 2>/dev/null || true
+systemctl stop nilavu-telemetry.service 2>/dev/null || true
+systemctl daemon-reload
+systemctl enable --now nilavu-storage-telemetry.service
 
-systemctl restart nilavu-telemetry.timer
-systemctl start nilavu-telemetry.service
-systemctl start nilavu-dosimeter-forward.service
-
-echo "Storage mapping corrected and both cloud heartbeats were sent."
+echo "Storage telemetry now self-recovers after network and power outages."
+systemctl --no-pager --full status nilavu-storage-telemetry.service || true
