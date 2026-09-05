@@ -21,6 +21,33 @@ NILAVUS separates storage, applications, and compute across repurposed hardware:
 
 Dosimeter accesses NASig over SMB/CIFS. The Main PC contributes compute when available, while primary media remains on NASig.
 
+## The hardware
+
+<div align="center">
+  <img src="./public/showcase/nilavus-hardware.jpg" alt="The physical NILAVUS home server cabinet" width="82%">
+  <br>
+  <sub>The physical NILAVUS installation. The repurposed Dosimeter laptop and NASig storage system are housed together inside this cabinet.</sub>
+</div>
+
+## Interface showcase
+
+<table>
+  <tr>
+    <td width="33%" align="center">
+      <img src="./public/showcase/nilavus-access.png" alt="NILAVUS access screen" width="100%"><br>
+      <sub>PS2-inspired access screen</sub>
+    </td>
+    <td width="33%" align="center">
+      <img src="./public/showcase/nilavus-services.png" alt="NILAVUS services dashboard" width="100%"><br>
+      <sub>Unified self-hosted services</sub>
+    </td>
+    <td width="33%" align="center">
+      <img src="./public/showcase/nilavus-system-health.png" alt="NILAVUS system health and storage dashboard" width="100%"><br>
+      <sub>Live node and storage telemetry</sub>
+    </td>
+  </tr>
+</table>
+
 ## Dashboard telemetry
 
 - GitHub Pages serves the static dashboard.
