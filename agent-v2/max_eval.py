@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Graded end-to-end check of a running M.A.X. core: python3 max_eval.py [http://127.0.0.1:8098]
-(A full run stays under the core's default rate limit of 10 questions a minute.)
+
+The suite deliberately uses the production rate limits. If another request (or this
+17-case suite) fills the sliding window, it waits for that window instead of failing.
 
 Every expectation is computed from live /context, so it stays valid as telemetry changes.
 """
@@ -9,6 +11,7 @@ import json
 import re
 import sys
 import time
+import urllib.error
 import urllib.request
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8098").rstrip("/")
@@ -20,19 +23,27 @@ def get(path):
 
 
 def chat(body):
-    request = urllib.request.Request(BASE + "/chat", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-    done, first, started = {}, None, time.time()
-    with urllib.request.urlopen(request, timeout=300) as response:
-        for raw in response:
-            line = raw.decode().strip()
-            if not line.startswith("data: "):
-                continue
-            event = json.loads(line[6:])
-            if event["type"] == "token" and first is None:
-                first = time.time() - started
-            if event["type"] in ("done", "error"):
-                done = event
-    return done, first
+    for attempt in range(2):
+        request = urllib.request.Request(BASE + "/chat", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+        done, first, started = {}, None, time.time()
+        try:
+            with urllib.request.urlopen(request, timeout=300) as response:
+                for raw in response:
+                    line = raw.decode().strip()
+                    if not line.startswith("data: "):
+                        continue
+                    event = json.loads(line[6:])
+                    if event["type"] == "token" and first is None:
+                        first = time.time() - started
+                    if event["type"] in ("done", "error"):
+                        done = event
+            return done, first
+        except urllib.error.HTTPError as error:
+            if error.code != 429 or attempt:
+                raise
+            print("Rate-limit window reached; waiting 61 seconds before continuing ...", flush=True)
+            time.sleep(61)
+    raise RuntimeError("unreachable")
 
 
 ctx = get("/context")

@@ -53,6 +53,7 @@ PORT = int(env("MAX_PORT", "8098"))
 # rate limit and queue cap below are what keep the i3 from being monopolised.
 PATH_PREFIX = env("MAX_PATH_PREFIX", "/ai").rstrip("/")
 RATE_PER_MINUTE = int(env("MAX_RATE_PER_MINUTE", "10"))  # across everyone; protects the i3
+CLIENT_RATE_PER_MINUTE = int(env("MAX_CLIENT_RATE_PER_MINUTE", "6"))  # per visitor, so one can't starve the rest
 MAX_WAITING = 2            # questions allowed to queue behind the one being answered
 HISTORY_TURNS = 4          # recent messages sent to the model; more = slower on the i3
 MAX_MESSAGE = 600
@@ -653,22 +654,28 @@ last_used = time.time()
 
 
 class RateLimiter:
-    """Sliding one-minute window shared by all callers; stops a loop from monopolising the CPU."""
+    """Sliding one-minute windows: one shared by everyone (protects the i3) and one per client
+    (so a single visitor looping requests can't use up everyone else's share)."""
 
-    def __init__(self, per_minute):
-        self.per_minute, self.times, self.lock = per_minute, [], threading.Lock()
+    def __init__(self, per_minute, per_client):
+        self.per_minute, self.per_client = per_minute, per_client
+        self.times, self.clients, self.lock = [], {}, threading.Lock()
 
-    def allow(self):
+    def allow(self, client):
         with self.lock:
             now = time.time()
             self.times = [t for t in self.times if now - t < 60]
-            if len(self.times) >= self.per_minute:
+            mine = [t for t in self.clients.get(client, []) if now - t < 60]
+            # Forget idle clients so the table can't grow without bound.
+            self.clients = {c: ts for c, ts in self.clients.items() if ts and now - ts[-1] < 60}
+            if len(self.times) >= self.per_minute or len(mine) >= self.per_client:
                 return False
             self.times.append(now)
+            self.clients[client] = mine + [now]
             return True
 
 
-LIMITER = RateLimiter(RATE_PER_MINUTE)
+LIMITER = RateLimiter(RATE_PER_MINUTE, CLIENT_RATE_PER_MINUTE)
 waiting = threading.BoundedSemaphore(MAX_WAITING + 1)  # the running question + MAX_WAITING queued
 
 
@@ -789,19 +796,34 @@ class Handler(BaseHTTPRequestHandler):
             return path[len(PATH_PREFIX):] or "/"
         return path
 
+    @property
+    def forwarded(self):
+        # Tailscale Serve/Funnel sets X-Forwarded-For; requests made on Dosimeter itself have none.
+        return bool(self.headers.get("X-Forwarded-For"))
+
+    @property
+    def client(self):
+        # The last entry is the one Tailscale added, so a visitor can't spoof it by sending their own.
+        forwarded = self.headers.get("X-Forwarded-For", "")
+        return forwarded.split(",")[-1].strip() or self.client_address[0]
+
     def do_GET(self):
         if self.route == "/health":
+            # Deliberately minimal: no paths, ports or endpoints.
             return self._json(200, {"ok": True, "name": "M.A.X.", "provider": AI.name, "model": AI.model,
                                     "available": AI.available(), "modelLoaded": AI.loaded()})
         if self.route == "/context":
+            # Raw telemetry for debugging on the box; the dashboard never needs it remotely.
+            if self.forwarded:
+                return self._json(403, {"error": "/context is only available on Dosimeter itself"})
             return self._json(200, build_context())
         self._json(404, {"error": "not found"})
 
     def do_POST(self):
         if self.route != "/chat":
             return self._json(404, {"error": "not found"})
-        if not LIMITER.allow():
-            return self._json(429, {"error": f"Rate limit: at most {RATE_PER_MINUTE} questions a minute."})
+        if not LIMITER.allow(self.client):
+            return self._json(429, {"error": "M.A.X. is getting a lot of questions. Try again in a minute."})
         try:
             length = int(self.headers.get("Content-Length") or 0)
             if length > 16384:
