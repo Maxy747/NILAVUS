@@ -6,3 +6,5 @@ dist/
 *.log
 *.tsbuildinfo
 supabase/.temp/
+__pycache__/
+*.py[cod]

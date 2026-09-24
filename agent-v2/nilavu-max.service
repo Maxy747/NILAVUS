@@ -1,0 +1,31 @@
+[Unit]
+Description=M.A.X. core, the NILAVUS assistant (on-demand local model)
+After=network-online.target nilavu-dosimeter-metrics.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dosimeter
+# Provider: llamacpp (default, managed llama-server), ollama or openai. Examples:
+#   Environment=MAX_PROVIDER=ollama OLLAMA_BASE_URL=http://localhost:11434 OLLAMA_MODEL=qwen3:0.6b
+#   Environment=MAX_PROVIDER=openai OPENAI_BASE_URL=http://127.0.0.1:8080/v1 OPENAI_MODEL=my-model
+Environment=MAX_PROVIDER=llamacpp
+Environment=MAX_IDLE_SECONDS=600
+Environment=MAX_RATE_PER_MINUTE=10
+ExecStart=/usr/bin/python3 /home/dosimeter/llm/max_core.py
+# always: M.A.X. exits cleanly (status 0) on SIGTERM so it can stop the model, which
+# on-failure would treat as "done". This also lets code updates restart it without sudo.
+Restart=always
+RestartSec=5
+# Share the i3 politely with Immich and Jellyfin: low priority, at most 2 of 4 threads.
+Nice=10
+CPUQuota=200%
+# The 3B model plus its page cache peaked at exactly 3G and spilled 1G into swap; 4G leaves headroom.
+MemoryMax=4G
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

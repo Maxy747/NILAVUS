@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
+import MaxLauncher from './max/MaxLauncher';
+import type { MaxTelemetry } from './max/telemetry';
 
 type ConnectionMode = 'lan' | 'remote';
 type NodeName = 'nilavus' | 'nilavus-storage';
@@ -70,6 +72,7 @@ const normalizeHealth = (payload: HealthPayload): HealthPayload => {
 export default function Home() {
   const [mode, setMode] = useState<ConnectionMode>('remote');
   const [health, setHealth] = useState<HealthPayload | null>(null);
+  const [statusLive, setStatusLive] = useState(false);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [logoActive, setLogoActive] = useState(false);
   const [gatewayLeaving, setGatewayLeaving] = useState(false);
@@ -216,10 +219,10 @@ export default function Home() {
       }
       if (hasLiveSource) {
         statusFailures.current = 0;
-        if (active) setHealth(payload);
+        if (active) { setHealth(payload); setStatusLive(true); }
       } else {
         statusFailures.current += 1;
-        if (active && statusFailures.current >= 3) setHealth(offlineHealth);
+        if (active && statusFailures.current >= 3) { setHealth(offlineHealth); setStatusLive(false); }
       }
     };
     refresh();
@@ -243,6 +246,14 @@ export default function Home() {
     window.addEventListener('resize', onScroll);
     return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (frame) window.cancelAnimationFrame(frame); };
   }, []);
+
+  // M.A.X. reuses the telemetry this page already polls (no extra requests, no fake values).
+  const maxTelemetry = useMemo<MaxTelemetry>(() => ({
+    live: statusLive,
+    nodes: { nilavus: health?.nodes.nilavus, 'nilavus-storage': health?.nodes['nilavus-storage'] },
+    services: Object.entries(services).filter(([key]) => key !== 'ubuntu')
+      .map(([key, service]) => ({ key, name: service.name, host: service.host })),
+  }), [health, statusLive]);
 
   const chooseMode = (nextMode: ConnectionMode) => {
     if (nextMode === mode) return;
@@ -521,6 +532,8 @@ export default function Home() {
           })}</div>
         </section>
       </section>
+
+      <MaxLauncher telemetry={maxTelemetry} enabled={gatewayOpen && !aboutOpen} onSound={playSound} />
 
       <section className="kinetic-signature" aria-label="Nilavus signature">
         <button className="kinetic-word" type="button" onClick={openAbout} aria-label="Open the secret NILAVUS about page">NILAVUS<sup>®</sup></button>
