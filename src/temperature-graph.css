@@ -9,5 +9,5 @@
 .temperature-nas { color: #b59bff; fill: #b59bff; }
 .temperature-trace { stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .health-face.health-back { grid-template-rows: 1fr auto; gap: 8px; }
-.health-face.health-back > span { font-size: clamp(20px, 3vw, 32px); }
+.health-face.health-back > span { font-size: clamp(20px, 3vw, 32px); margin-bottom: 12px; }
 .max-thermal-block { margin-top: auto; }
