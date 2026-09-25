@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
-import MaxLauncher from './max/MaxLauncher';
+import MaxLauncher, { type CoreState } from './max/MaxLauncher';
 import type { MaxTelemetry } from './max/telemetry';
 
 type ConnectionMode = 'lan' | 'remote';
@@ -73,6 +73,7 @@ export default function Home() {
   const [mode, setMode] = useState<ConnectionMode>('remote');
   const [health, setHealth] = useState<HealthPayload | null>(null);
   const [statusLive, setStatusLive] = useState(false);
+  const [maxState, setMaxState] = useState<CoreState>('checking');
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [logoActive, setLogoActive] = useState(false);
   const [gatewayLeaving, setGatewayLeaving] = useState(false);
@@ -475,7 +476,7 @@ export default function Home() {
       <header className="hero">
         <div className="topline">
           <div className="brand"><button className={`brand-trigger ${logoActive ? 'logo-active' : ''}`} type="button" onClick={animateLogo} aria-label="Animate NILAVUS logo"><img className="brand-logo" src={`${import.meta.env.BASE_URL}n-logo.png`} alt="NILAVUS" /></button><span className="brand-word">NILAVUS</span></div>
-          <div className="node-statuses header-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}</div>
+          <div className="node-statuses header-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}<div className={`status ${maxState}`}><span />M.A.X. {maxState}</div></div>
         </div>
         <div className="hero-copy">
           <div><p className="eyebrow">PERSONAL CLOUD</p><h1><span className="hero-line hero-line-one">Your media.</span><span className="hero-line hero-line-two"><em>Your space.</em></span></h1></div>
@@ -533,7 +534,7 @@ export default function Home() {
         </section>
       </section>
 
-      <MaxLauncher telemetry={maxTelemetry} enabled={gatewayOpen && !aboutOpen} onSound={playSound} />
+      <MaxLauncher telemetry={maxTelemetry} enabled={gatewayOpen && !aboutOpen} onSound={playSound} onCoreStateChange={setMaxState} />
 
       <section className="kinetic-signature" aria-label="Nilavus signature">
         <button className="kinetic-word" type="button" onClick={openAbout} aria-label="Open the secret NILAVUS about page">NILAVUS<sup>®</sup></button>

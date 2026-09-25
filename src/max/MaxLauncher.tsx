@@ -4,13 +4,13 @@ import { fetchHealth } from './api';
 import MaxConsole from './MaxConsole';
 import { alerts, storageStatus, systemStatus, type MaxTelemetry } from './telemetry';
 
-type CoreState = 'checking' | 'online' | 'offline';
+export type CoreState = 'checking' | 'online' | 'offline';
 const HEALTH_EVERY_MS = 60_000; // /health never touches the model, so this is cheap
 
-type Props = { telemetry: MaxTelemetry; enabled: boolean; onSound?: (name: 'click' | 'back') => void };
+type Props = { telemetry: MaxTelemetry; enabled: boolean; onSound?: (name: 'click' | 'back') => void; onCoreStateChange?: (state: CoreState) => void };
 
 /** Entry points to M.A.X.: a dashboard section, a floating button, and Ctrl+K or "/". */
-export default function MaxLauncher({ telemetry, enabled, onSound }: Props) {
+export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateChange }: Props) {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLElement | null>(null);
   const [core, setCore] = useState<CoreState>('checking');
@@ -18,6 +18,8 @@ export default function MaxLauncher({ telemetry, enabled, onSound }: Props) {
     const list = alerts(telemetry);
     return { status: systemStatus(telemetry, list), storage: storageStatus(telemetry, list) };
   }, [telemetry]);
+
+  useEffect(() => { onCoreStateChange?.(core); }, [core, onCoreStateChange]);
 
   // The light means "is M.A.X. reachable", not system health (the status text covers that).
   useEffect(() => {
