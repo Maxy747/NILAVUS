@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.visit]
 verify_jwt = false
+
+[functions.temperature-history]
+verify_jwt = false

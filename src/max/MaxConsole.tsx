@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, 
 import { fetchHealth, fetchHistory, MAX_URL, streamChat, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
 import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, nodesReporting, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
 import './max.css';
+import TemperatureGraph from '../TemperatureGraph';
 
 type Entry = {
   id: number; kind: 'max' | 'user' | 'alert' | 'system'; text: string; time: string;
@@ -369,6 +370,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
               <h3>ALERTS</h3>
               {alertList.length ? <ul>{alertList.map(a => <li key={a.message} className={a.level}>{a.message}</li>)}</ul> : <p className="dim">None active.</p>}
             </div>}
+            <div className="max-block max-thermal-block"><TemperatureGraph /></div>
           </div>
         </aside>
 

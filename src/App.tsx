@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import MaxLauncher, { type CoreState } from './max/MaxLauncher';
+import TemperatureGraph from './TemperatureGraph';
 import type { MaxTelemetry } from './max/telemetry';
 
 type ConnectionMode = 'lan' | 'remote';
@@ -506,13 +507,13 @@ export default function Home() {
           const node = health?.nodes[nodeName];
           const state = node?.online ? 'online' : health ? 'offline' : 'checking';
           const held = heldHealthCard === nodeName;
-          return <article className={`health-card ${state} ${held ? 'health-card-held' : ''}`} key={nodeName} onPointerDown={event => startHealthHold(nodeName, event)} onPointerUp={stopHealthHold} onPointerCancel={stopHealthHold} onPointerLeave={stopHealthHold} onContextMenu={event => event.preventDefault()} aria-label={`${nodeName} system health. Press and hold to reveal host name.`}>
+          return <article className={`health-card ${state} ${held ? 'health-card-held' : ''}`} key={nodeName} tabIndex={0} onKeyDown={event => { if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); setHeldHealthCard(nodeName); } }} onKeyUp={event => { if (event.key === ' ' || event.key === 'Enter') stopHealthHold(); }} onBlur={stopHealthHold} onPointerDown={event => startHealthHold(nodeName, event)} onPointerUp={stopHealthHold} onPointerCancel={stopHealthHold} onPointerLeave={stopHealthHold} onContextMenu={event => event.preventDefault()} aria-label={`${nodeName} system health. Hold pointer, Space or Enter to reveal 24-hour temperature history and host name.`}>
             <div className="health-card-flip">
               <div className="health-face health-front">
                 <div className="health-title"><div><span>{nodeName === 'nilavus' ? 'HP Laptop' : 'Storage PC'}</span><h3>{nodeName}</h3></div><b><i />{state}</b></div>
                 <div className="metric-grid"><div><span>Temperature</span><strong>{formatMetric(node?.temperatureC, '°C')}</strong></div><div><span>CPU activity</span><strong>{formatMetric(node?.cpuPercent)}</strong></div><div><span>Memory</span><strong>{formatMetric(node?.memoryPercent)}</strong></div><div><span>Storage</span><strong>{formatMetric(node?.diskPercent)}</strong></div><div><span>Load</span><strong>{node?.load?.[0]?.toFixed(2) ?? '—'}</strong></div><div><span>Uptime</span><strong>{formatUptime(node?.uptimeSeconds)}</strong></div></div>
               </div>
-              <div className="health-face health-back" aria-hidden={!held}><span>{nodeName === 'nilavus' ? 'DOSIMETER' : 'PENTIUM'}</span></div>
+              <div className="health-face health-back" aria-hidden={!held}><TemperatureGraph node={nodeName} active={held} /><span>{nodeName === 'nilavus' ? 'DOSIMETER' : 'PENTIUM'}</span></div>
             </div>
           </article>;
         })}</div>

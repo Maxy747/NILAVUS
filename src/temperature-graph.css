@@ -1,0 +1,13 @@
+.temperature-history { position: relative; z-index: 1; width: 100%; min-width: 0; color: #90a8be; font: 10px/1.4 var(--mono, monospace); text-align: left; }
+.temperature-heading, .temperature-legend { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.temperature-heading b { font-size: 10px; letter-spacing: .12em; color: #bfd3e6; }
+.temperature-history small { font-size: 9px; }
+.temperature-history svg { width: 100%; height: auto; max-height: 115px; display: block; overflow: visible; }
+.temperature-history svg text { fill: #849db5; font: 9px monospace; }
+.temperature-grid { stroke: #36506a; stroke-width: .5; opacity: .5; fill: none; }
+.temperature-laptop { color: #66e1eb; fill: #66e1eb; }
+.temperature-nas { color: #b59bff; fill: #b59bff; }
+.temperature-trace { stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.health-face.health-back { grid-template-rows: 1fr auto; gap: 8px; }
+.health-face.health-back > span { font-size: clamp(20px, 3vw, 32px); }
+.max-thermal-block { margin-top: auto; }
