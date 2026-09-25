@@ -6,9 +6,10 @@ phrases them (a 3B model got 1/6 right choosing tools itself, 12/12 this way).
 
   GET  /health   -> provider, model, endpoint, whether the AI core is reachable/loaded
   GET  /context  -> structured live context (nodes, services, storage, network, alerts)
+  GET  /history  -> past conversations from the chat log (Dosimeter or tailnet devices only)
   POST /chat     -> text/event-stream of {"type": "meta" | "token" | "done" | "error", ...}
                     body: {"messages": [{"role": "user"|"assistant", "content": "..."}],
-                           "action": optional quick action}
+                           "action": optional quick action, "session": optional console session id}
 
 The AI only runs when Max asks something. With the default llama.cpp provider the model
 process starts on demand and stops after MAX_IDLE_SECONDS. Listens on localhost only;
@@ -57,6 +58,14 @@ CLIENT_RATE_PER_MINUTE = int(env("MAX_CLIENT_RATE_PER_MINUTE", "6"))  # per visi
 MAX_WAITING = 2            # questions allowed to queue behind the one being answered
 HISTORY_TURNS = 4          # recent messages sent to the model; more = slower on the i3
 MAX_MESSAGE = 600
+# Every question and answer is appended here (systemd's StateDirectory, /var/lib/nilavu-max).
+# Readable back only from Dosimeter itself or a tailnet device, never through Funnel.
+CHAT_LOG = env("MAX_CHAT_LOG", os.path.join(os.environ.get("STATE_DIRECTORY") or f"{HOME}/.local/state/nilavu-max", "chats.jsonl"))
+CHAT_LOG_MAX_BYTES = 5_000_000   # then rotated to chats.jsonl.1, so at most ~10 MB is kept
+HISTORY_SESSIONS = 40
+# Optional: only these Tailscale logins may read history (default: any tailnet user identity).
+HISTORY_USERS = {u.strip().lower() for u in env("MAX_HISTORY_USERS", "").split(",") if u.strip()}
+SESSION_ID = re.compile(r"^[A-Za-z0-9-]{8,64}$")
 ALLOWED_ORIGINS = set(filter(None, env("MAX_ORIGINS", ",".join([
     "https://maxy747.github.io",               # GitHub Pages
     "https://nilavus.mazinworlds.workers.dev",  # Cloudflare Worker
@@ -719,7 +728,7 @@ def chat_events(messages, action):
 
     ctx = build_context()
     facts, checks, rows = build_facts(question, ctx, action)
-    yield {"type": "meta", "rows": rows, "telemetry": ctx["telemetry"], "status": ctx["status"], "storageStatus": ctx["storageStatus"]}
+    yield {"type": "meta", "question": question, "rows": rows, "telemetry": ctx["telemetry"], "status": ctx["status"], "storageStatus": ctx["storageStatus"]}
 
     hint = "\nMention anything marked CRITICAL or WARNING." if any(w in f for f in facts for w in ("CRITICAL", "WARNING")) else ""
     prompt = history[:-1] + [{"role": "user", "content":
@@ -760,6 +769,46 @@ def chat_events(messages, action):
         # The answer is right but incomplete: keep it and add what it left out.
         text = f"{text} {tidy(omitted)}"
     yield {"type": "done", "answer": text, "corrected": corrected, "seconds": round(time.time() - started, 1)}
+
+# ------------------------------------------------------------------- chat log
+
+log_lock = threading.Lock()
+
+
+def log_chat(record):
+    """Append one exchange to the chat log. Logging must never break a chat, so errors only print."""
+    try:
+        with log_lock:
+            os.makedirs(os.path.dirname(CHAT_LOG), mode=0o700, exist_ok=True)
+            if os.path.exists(CHAT_LOG) and os.path.getsize(CHAT_LOG) > CHAT_LOG_MAX_BYTES:
+                os.replace(CHAT_LOG, CHAT_LOG + ".1")
+            fd = os.open(CHAT_LOG, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+            with os.fdopen(fd, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except OSError as error:
+        print(f"chat log: {error}", flush=True)
+
+
+def read_history(limit=HISTORY_SESSIONS):
+    """Past conversations, newest first, grouped by the console's session id."""
+    sessions = {}
+    with log_lock:
+        for path in (CHAT_LOG + ".1", CHAT_LOG):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    lines = f.readlines()
+            except FileNotFoundError:
+                continue
+            for line in lines:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                sid = r.get("session") or f"single-{r.get('time')}"
+                s = sessions.setdefault(sid, {"id": sid, "started": r.get("time"), "via": r.get("via"), "turns": []})
+                s["last"] = r.get("time")
+                s["turns"].append({k: r.get(k) for k in ("time", "question", "answer", "error", "corrected", "seconds")})
+    return sorted(sessions.values(), key=lambda s: s["last"] or "", reverse=True)[:limit]
 
 # ---------------------------------------------------------------------- HTTP
 
@@ -813,6 +862,21 @@ class Handler(BaseHTTPRequestHandler):
         forwarded = self.headers.get("X-Forwarded-For", "")
         return forwarded.split(",")[-1].strip() or self.client_address[0]
 
+    @property
+    def tailnet_user(self):
+        # Tailscale Serve adds the login for tailnet devices and strips any copy a client sends;
+        # Funnel (public) requests never carry one.
+        return (self.headers.get("Tailscale-User-Login") or "").strip().lower()
+
+    @property
+    def via(self):
+        return "local" if not self.forwarded else "tailnet" if self.tailnet_user else "public"
+
+    def history_allowed(self):
+        if not self.forwarded:
+            return True
+        return bool(self.tailnet_user) and (not HISTORY_USERS or self.tailnet_user in HISTORY_USERS)
+
     def do_GET(self):
         if self.route == "/health":
             # Deliberately minimal: no paths, ports or endpoints.
@@ -823,6 +887,10 @@ class Handler(BaseHTTPRequestHandler):
             if self.forwarded:
                 return self._json(403, {"error": "/context is only available on Dosimeter itself"})
             return self._json(200, build_context())
+        if self.route == "/history":
+            if not self.history_allowed():
+                return self._json(403, {"error": "Chat history is only available on your tailnet."})
+            return self._json(200, {"sessions": read_history()})
         self._json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -840,6 +908,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return self._json(400, {"error": "invalid JSON"})
         action = body.get("action") if body.get("action") in ACTIONS else None
+        session = body.get("session") if isinstance(body.get("session"), str) and SESSION_ID.match(body["session"]) else None
 
         # Server-sent events: tokens appear as the model writes them.
         self.send_response(200)
@@ -847,12 +916,24 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
+        record = {"time": datetime.now(timezone.utc).isoformat(timespec="seconds"), "session": session,
+                  "via": self.via, "user": self.tailnet_user or None, "client": self.client, "action": action,
+                  "question": None, "answer": None, "error": None}
         try:
             for event in chat_events(body.get("messages", []), action):
+                if event["type"] == "meta":
+                    record["question"] = event["question"]
+                elif event["type"] == "done":
+                    record.update(answer=event["answer"], corrected=event["corrected"], seconds=event["seconds"])
+                elif event["type"] == "error":
+                    record["error"] = event["error"]
                 self.wfile.write(f"data: {json.dumps(event)}\n\n".encode())
                 self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError):
-            pass  # Max closed the console mid-answer; nothing to do
+            record["error"] = record["error"] or "interrupted"  # Max closed the console mid-answer
+        finally:
+            if record["question"]:
+                log_chat(record)
 
     def log_message(self, message, *args):
         return

@@ -26,6 +26,9 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=read-only
+# Chat log: /var/lib/nilavu-max/chats.jsonl, owned by dosimeter and private (0700).
+StateDirectory=nilavu-max
+StateDirectoryMode=0700
 
 [Install]
 WantedBy=multi-user.target

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { fetchHealth, MAX_URL, streamChat, type ChatTurn, type CoreHealth, type QuickAction, type Row } from './api';
+import { fetchHealth, fetchHistory, MAX_URL, streamChat, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
 import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, nodesReporting, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
 import './max.css';
 
@@ -22,6 +22,54 @@ const QUICK: { action: QuickAction; label: string }[] = [
   { action: 'load', label: 'RESOURCES' }, { action: 'uptime', label: 'UPTIME' },
   { action: 'network', label: 'NETWORK' }, { action: 'docker', label: 'DOCKER' },
 ];
+
+// Chat history. Each conversation has an id that goes with every question, so Dosimeter's
+// chat log groups it the same way. CLR archives the current one on this device; the HISTORY
+// view shows those plus Dosimeter's log when this device is on the tailnet.
+const SESSION_KEY = 'max-session-v1';
+const ARCHIVE_KEY = 'max-sessions-v1';
+const ARCHIVE_LIMIT = 30;
+type Session = { id: string; started: string };
+type SavedChat = { id: string; started: string; last: string; entries: Entry[] };
+type PastChat = { id: string; last: string; title: string; count: number; entries: Entry[]; source: 'DEVICE' | 'DOSIMETER' | 'BOTH' };
+const newSession = (): Session => ({
+  id: globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`,
+  started: new Date().toISOString(),
+});
+const saveSession = (session: Session) => { try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch { /* this device only */ } };
+const loadSession = (): Session => {
+  try { const saved = JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null') as Session | null; if (saved?.id) return saved; } catch { /* fall through */ }
+  const session = newSession();
+  saveSession(session);
+  return session;
+};
+const loadArchive = (): SavedChat[] => { try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY) ?? '[]') as SavedChat[]; } catch { return []; } };
+const saveArchive = (chats: SavedChat[]) => { try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(chats.slice(0, ARCHIVE_LIMIT))); } catch { /* storage full: keep what fits */ } };
+const when = (iso: string) => new Date(iso).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+const timeOf = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+const fromServer = (session: HistorySession): Entry[] => session.turns.flatMap((turn, index) => [
+  { id: index * 2, kind: 'user' as const, text: turn.question, time: timeOf(turn.time) },
+  { id: index * 2 + 1, kind: 'max' as const, text: turn.answer ?? turn.error ?? '', error: !turn.answer, time: timeOf(turn.time),
+    corrected: Boolean(turn.corrected), seconds: turn.seconds ?? undefined },
+]);
+
+/** This device's archive and Dosimeter's log, merged by conversation id, newest first. */
+function pastChats(archive: SavedChat[], server: HistorySession[] | null, currentId: string): PastChat[] {
+  const byId = new Map<string, PastChat>();
+  const summary = (entries: Entry[]) => ({
+    title: entries.find(e => e.kind === 'user')?.text ?? '(no questions)', count: entries.filter(e => e.kind === 'user').length,
+  });
+  for (const chat of server ?? []) {
+    const entries = fromServer(chat);
+    byId.set(chat.id, { id: chat.id, last: chat.last, entries, source: 'DOSIMETER', ...summary(entries) });
+  }
+  for (const chat of archive) {
+    // The device copy has the telemetry rows, so it wins when both exist.
+    byId.set(chat.id, { id: chat.id, last: chat.last, entries: chat.entries, source: byId.has(chat.id) ? 'BOTH' : 'DEVICE', ...summary(chat.entries) });
+  }
+  return [...byId.values()].filter(chat => chat.id !== currentId && chat.count > 0).sort((a, b) => b.last.localeCompare(a.last));
+}
 
 const clock = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -47,6 +95,11 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
   const [booting, setBooting] = useState(() => { try { return !sessionStorage.getItem(BOOT_KEY) && !reducedMotion(); } catch { return false; } });
   const [bootLines, setBootLines] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false); // mobile: system panel collapsed by default
+  const [session, setSession] = useState(loadSession);
+  const [archive, setArchive] = useState(loadArchive);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [viewing, setViewing] = useState<PastChat | null>(null);
+  const [serverHistory, setServerHistory] = useState<HistorySession[] | null | 'loading' | 'error'>(null);
   const nextId = useRef(Date.now());
   const logRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -142,6 +195,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     if (!shown.trim()) return;
     setInput('');
     setBusy(true);
+    setHistoryOpen(false);
     const history: ChatTurn[] = log.filter(e => (e.kind === 'user' || e.kind === 'max') && !e.error && !e.pending)
       .slice(-3).map(e => ({ role: e.kind === 'user' ? 'user' : 'assistant', content: e.text }));
     const userEntry: Entry = { id: nextId.current++, kind: 'user', text: shown, time: clock() };
@@ -151,7 +205,8 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     abortRef.current = controller;
     let streamed = '';
     try {
-      await streamChat(request.action ? { action: request.action } : { messages: [...history, { role: 'user', content: request.text! }] }, event => {
+      await streamChat(request.action ? { action: request.action, session: session.id }
+        : { messages: [...history, { role: 'user', content: request.text! }], session: session.id }, event => {
         if (event.type === 'meta') update(replyId, { rows: event.rows });
         else if (event.type === 'token') { streamed += event.text; update(replyId, { text: streamed }); }
         else if (event.type === 'done') update(replyId, { text: event.answer, corrected: event.corrected, seconds: event.seconds, pending: false });
@@ -179,21 +234,67 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     const t = telemetryRef.current;
     announcedRef.current = deriveAlerts(t).map(alertKey); // the fresh greeting names them all
     saveAnnounced(announcedRef.current);
-    setLog([{ id: nextId.current++, kind: 'system', text: 'Conversation cleared.', time: clock() },
+    const saved = log.some(e => e.kind === 'user');
+    if (saved) {
+      const next = [{ id: session.id, started: session.started, last: new Date().toISOString(), entries: log.filter(e => !e.pending) },
+        ...archive.filter(chat => chat.id !== session.id)].slice(0, ARCHIVE_LIMIT);
+      setArchive(next);
+      saveArchive(next);
+    }
+    const fresh = newSession();
+    setSession(fresh);
+    saveSession(fresh);
+    setLog([{ id: nextId.current++, kind: 'system', text: saved ? 'New conversation. The previous one is in HISTORY.' : 'Conversation cleared.', time: clock() },
       { id: nextId.current++, kind: 'max', text: greeting(t), time: clock() }]);
   };
 
+  const openHistory = async () => {
+    setHistoryOpen(true);
+    setViewing(null);
+    if (core.state !== 'online') return;
+    setServerHistory('loading');
+    try { setServerHistory(await fetchHistory()); } catch { setServerHistory('error'); }
+  };
+  const closeHistory = () => { setHistoryOpen(false); setViewing(null); inputRef.current?.focus(); };
+  const chats = useMemo(() => pastChats(archive, Array.isArray(serverHistory) ? serverHistory : null, session.id),
+    [archive, serverHistory, session.id]);
+  const serverNote = serverHistory === 'loading' ? 'Dosimeter log: loading…'
+    : serverHistory === 'error' ? 'Dosimeter log: could not be read.'
+    : serverHistory === null ? (core.state === 'online' ? 'Dosimeter log: only readable on your tailnet. Showing chats saved on this device.'
+      : 'Dosimeter log: AI core offline. Showing chats saved on this device.')
+    : `Dosimeter log: ${serverHistory.length} conversation${serverHistory.length === 1 ? '' : 's'}.`;
+
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') { if (booting) finishBoot(); else onClose(); }
+      if (event.key === 'Escape') {
+        if (booting) finishBoot();
+        else if (viewing) setViewing(null);
+        else if (historyOpen) setHistoryOpen(false);
+        else onClose();
+      }
       else if (booting) finishBoot();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [booting, finishBoot, onClose]);
+  }, [booting, finishBoot, onClose, historyOpen, viewing]);
 
   const coreLabel = core.state === 'online' ? 'ONLINE' : core.state === 'offline' ? 'OFFLINE' : 'CONNECTING';
   const t = telemetry;
+  // live: the current conversation (interactive); false for a read-only past one.
+  const renderEntry = (entry: Entry, live: boolean) => <article key={entry.id} className={`max-entry ${entry.kind}${entry.level ? ` ${entry.level}` : ''}${entry.error ? ' error' : ''}`}>
+              <header>{entry.kind === 'user' ? 'MAX // USER' : entry.kind === 'alert' ? 'M.A.X. // ALERT' : entry.kind === 'system' ? 'SYSTEM' : 'M.A.X.'} <time>// {entry.time}</time></header>
+              {entry.pending && !entry.text
+                ? <p className="max-processing">M.A.X. // PROCESSING<span className="max-bar" aria-hidden="true" /></p>
+                : <p>{linkify(entry.text)}{entry.pending && <span className="max-cursor" aria-hidden="true">_</span>}</p>}
+              {entry.rows && entry.rows.length > 0 && <dl className="max-rows">{entry.rows.map(([label, value], index) =>
+                [<dt key={`l${index}`}>{label}</dt>, <dd key={`v${index}`}>{linkify(value)}</dd>])}</dl>}
+              {live && entry.kind === 'alert' && core.state === 'online' && <button type="button" className="max-inline" disabled={busy}
+                onClick={() => void send({ action: 'alerts', label: '[ ANALYZE ALERTS ]' })}>[ ANALYZE ]</button>}
+              {(entry.corrected || entry.seconds != null) && <footer>
+                {entry.corrected && <span>Model answer didn't match telemetry; showing verified facts.</span>}
+                {entry.seconds != null && <span>{entry.seconds.toFixed(1)}s</span>}
+              </footer>}
+            </article>;
 
   return <div className="max-overlay" role="dialog" aria-modal="true" aria-label="M.A.X. console">
     <div className="max-shell">
@@ -280,22 +381,25 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
             <button type="button" onClick={() => void checkCore()}>[ RETRY ]</button>
           </div>}
 
-          <div className="max-log" ref={logRef} aria-live="polite">
-            {log.map(entry => <article key={entry.id} className={`max-entry ${entry.kind}${entry.level ? ` ${entry.level}` : ''}${entry.error ? ' error' : ''}`}>
-              <header>{entry.kind === 'user' ? 'MAX // USER' : entry.kind === 'alert' ? 'M.A.X. // ALERT' : entry.kind === 'system' ? 'SYSTEM' : 'M.A.X.'} <time>// {entry.time}</time></header>
-              {entry.pending && !entry.text
-                ? <p className="max-processing">M.A.X. // PROCESSING<span className="max-bar" aria-hidden="true" /></p>
-                : <p>{linkify(entry.text)}{entry.pending && <span className="max-cursor" aria-hidden="true">_</span>}</p>}
-              {entry.rows && entry.rows.length > 0 && <dl className="max-rows">{entry.rows.map(([label, value], index) =>
-                [<dt key={`l${index}`}>{label}</dt>, <dd key={`v${index}`}>{linkify(value)}</dd>])}</dl>}
-              {entry.kind === 'alert' && core.state === 'online' && <button type="button" className="max-inline" disabled={busy}
-                onClick={() => void send({ action: 'alerts', label: '[ ANALYZE ALERTS ]' })}>[ ANALYZE ]</button>}
-              {(entry.corrected || entry.seconds != null) && <footer>
-                {entry.corrected && <span>Model answer didn't match telemetry; showing verified facts.</span>}
-                {entry.seconds != null && <span>{entry.seconds.toFixed(1)}s</span>}
-              </footer>}
-            </article>)}
-          </div>
+          {historyOpen ? <div className="max-log max-history" aria-label="Chat history">
+            <div className="max-history-bar">
+              {viewing ? <button type="button" onClick={() => setViewing(null)}>◂ BACK</button> : <strong>HISTORY</strong>}
+              <span>{viewing ? `${when(viewing.last)} · ${viewing.source}` : `${chats.length} past conversation${chats.length === 1 ? '' : 's'}`}</span>
+              <button type="button" onClick={closeHistory}>CURRENT ▸</button>
+            </div>
+            {viewing ? viewing.entries.map(entry => renderEntry(entry, false)) : <>
+              <p className="dim max-history-note">{serverNote}</p>
+              {chats.length ? <ul className="max-history-list">{chats.map(chat => <li key={chat.id}>
+                <button type="button" onClick={() => setViewing(chat)}>
+                  <time>{when(chat.last)}</time>
+                  <span className="max-history-title">{chat.title}</span>
+                  <span className="dim">{chat.count} question{chat.count === 1 ? '' : 's'} · {chat.source}</span>
+                </button>
+              </li>)}</ul> : <p className="dim">No past conversations yet. CLR saves the current one here and starts a new one.</p>}
+            </>}
+          </div> : <div className="max-log" ref={logRef} aria-live="polite">
+            {log.map(entry => renderEntry(entry, true))}
+          </div>}
 
           <div className="max-quick" role="group" aria-label="Quick actions">
             {QUICK.map(q => <button key={q.action} type="button" disabled={busy || core.state !== 'online'}
@@ -311,7 +415,9 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
             {busy
               ? <button type="button" onClick={() => abortRef.current?.abort()}>STOP</button>
               : <button type="button" disabled={!input.trim() || core.state !== 'online'} onClick={() => void send({ text: input })}>SEND</button>}
-            <button type="button" className="max-clear" onClick={clear} aria-label="Clear conversation">CLR</button>
+            <button type="button" className="max-clear" onClick={() => void (historyOpen ? closeHistory() : openHistory())}
+              aria-pressed={historyOpen} aria-label="Chat history">HISTORY</button>
+            <button type="button" className="max-clear" onClick={clear} aria-label="Save this conversation and start a new one">CLR</button>
           </div>
         </section>
       </div>}

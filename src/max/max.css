@@ -347,6 +347,49 @@ html.max-open { overflow: hidden; }
 .max-prompt textarea:disabled { opacity: .5; }
 .max-prompt button { padding: 9px 12px; }
 .max-clear { color: var(--max-dim) !important; }
+.max-clear[aria-pressed="true"] { border-color: color-mix(in srgb, var(--ps-cyan) 50%, transparent); color: var(--ps-cyan) !important; }
+
+/* ---------- history ---------- */
+.max-history { gap: 12px; }
+.max-history-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--max-line);
+  color: var(--max-dim);
+  font-size: 11px;
+  letter-spacing: .12em;
+}
+.max-history-bar strong { color: var(--ps-cyan); font-weight: 600; letter-spacing: .18em; }
+.max-history-bar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.max-history-note { margin: 0; font-size: 11px; line-height: 1.5; }
+.max-history-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.max-history-bar button,
+.max-history-list button {
+  border: 1px solid var(--max-line);
+  border-radius: 4px;
+  background: rgba(10, 22, 40, .7);
+  color: var(--max-text);
+  font: 11px var(--max-mono);
+  letter-spacing: .1em;
+  cursor: pointer;
+}
+.max-history-bar button { flex: none; padding: 5px 10px; }
+.max-history-list button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  letter-spacing: .04em;
+}
+.max-history-list time { color: var(--max-dim); }
+.max-history-title { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.max-history-list .dim { grid-column: 2; font-size: 10px; letter-spacing: .1em; }
+:is(.max-history-bar button, .max-history-list button):hover { border-color: color-mix(in srgb, var(--ps-cyan) 50%, transparent); color: #fff; }
+:is(.max-history-bar button, .max-history-list button):focus-visible { outline: 2px solid var(--ps-cyan); outline-offset: 1px; }
 
 /* ---------- tablet / mobile ---------- */
 @media (max-width: 860px) {
@@ -370,6 +413,10 @@ html.max-open { overflow: hidden; }
   .max-header-status { order: 3; width: 100%; margin-left: 0; }
   .max-close { margin-left: auto; }
   .max-teaser-card kbd { display: none; }
+  .max-prompt { gap: 6px; }
+  .max-prompt button { padding: 9px 8px; }
+  .max-history-list button { grid-template-columns: 1fr; }
+  .max-history-list .dim { grid-column: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

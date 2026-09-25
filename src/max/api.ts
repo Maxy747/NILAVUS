@@ -13,6 +13,8 @@ export type ChatEvent =
   | { type: 'token'; text: string }
   | { type: 'done'; answer: string; corrected: boolean; seconds: number }
   | { type: 'error'; error: string };
+export type HistoryTurn = { time: string; question: string; answer: string | null; error: string | null; corrected?: boolean | null; seconds?: number | null };
+export type HistorySession = { id: string; started: string; last: string; via?: string; turns: HistoryTurn[] };
 
 export async function fetchHealth(signal?: AbortSignal): Promise<CoreHealth> {
   const response = await fetch(`${MAX_URL}/health`, { cache: 'no-store', signal });
@@ -20,8 +22,16 @@ export async function fetchHealth(signal?: AbortSignal): Promise<CoreHealth> {
   return response.json() as Promise<CoreHealth>;
 }
 
+/** Chat log kept on Dosimeter. null when this device isn't on the tailnet (the core refuses public reads). */
+export async function fetchHistory(signal?: AbortSignal): Promise<HistorySession[] | null> {
+  const response = await fetch(`${MAX_URL}/history`, { cache: 'no-store', signal });
+  if (response.status === 403) return null;
+  if (!response.ok) throw new Error(`M.A.X. core replied ${response.status}`);
+  return ((await response.json()) as { sessions: HistorySession[] }).sessions;
+}
+
 /** POST /chat and deliver its server-sent events as they arrive. */
-export async function streamChat(body: { messages?: ChatTurn[]; action?: QuickAction }, onEvent: (event: ChatEvent) => void, signal: AbortSignal) {
+export async function streamChat(body: { messages?: ChatTurn[]; action?: QuickAction; session?: string }, onEvent: (event: ChatEvent) => void, signal: AbortSignal) {
   const response = await fetch(`${MAX_URL}/chat`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal,
   });
