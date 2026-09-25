@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { fetchHealth, MAX_URL, streamChat, type ChatTurn, type CoreHealth, type QuickAction, type Row } from './api';
-import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
+import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, nodesReporting, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
 import './max.css';
 
 type Entry = {
@@ -103,14 +103,21 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
   useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: reducedMotion() ? 'auto' : 'smooth' }); }, [log]);
 
   // Boot sequence: once per session, skippable, skipped entirely with reduced motion.
-  const bootScript = useMemo(() => [
-    'NILAVUS SYSTEM', '--------------', 'INITIALIZING M.A.X....', '',
-    `CORE ............ OK`,
-    `NETWORK ......... ${navigator.onLine ? 'OK' : 'OFFLINE'}`,
-    `TELEMETRY ....... ${telemetry.live ? 'OK' : 'UNAVAILABLE'}`,
-    `AI PROVIDER ..... ${core.state === 'online' ? 'ONLINE' : core.state === 'offline' ? 'OFFLINE' : 'CHECKING'}`,
-    '', 'M.A.X. READY.',
-  ], [telemetry.live, core.state]);
+  // Every line is a real check: nothing reads OK unless it answered.
+  const reporting = nodesReporting(telemetry);
+  const bootScript = useMemo(() => {
+    const line = (label: string, value: string) => `${label} ${'.'.repeat(Math.max(3, 17 - label.length))} ${value}`;
+    const ready = core.state === 'online' && core.health.available;
+    return [
+      'NILAVUS SYSTEM', '--------------', 'INITIALIZING M.A.X....', '',
+      line('DEVICE NETWORK', navigator.onLine ? 'OK' : 'OFFLINE'),
+      line('TELEMETRY', !telemetry.live ? 'UNAVAILABLE' : reporting === NODES.length ? 'OK'
+        : reporting === 0 ? 'NO MACHINES REPORTING' : `PARTIAL (${reporting}/${NODES.length})`),
+      line('M.A.X. CORE', core.state === 'checking' ? 'CHECKING' : core.state === 'online' ? 'OK' : 'OFFLINE'),
+      line('AI MODEL', core.state !== 'online' ? '—' : ready ? 'READY' : 'UNAVAILABLE'),
+      '', ready ? 'M.A.X. READY.' : 'M.A.X. LIMITED: TELEMETRY ONLY.',
+    ];
+  }, [telemetry.live, reporting, core]);
   const finishBoot = useCallback(() => {
     setBooting(false);
     try { sessionStorage.setItem(BOOT_KEY, '1'); } catch { /* per-tab only */ }
@@ -118,8 +125,8 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
   useEffect(() => {
     if (!booting) return;
     if (bootLines >= bootScript.length) { const done = window.setTimeout(finishBoot, 500); return () => window.clearTimeout(done); }
-    // Hold on the AI provider line until the health check has answered.
-    if (bootScript[bootLines]?.startsWith('AI PROVIDER') && core.state === 'checking') return;
+    // Hold on the core line until the health check has answered.
+    if (bootScript[bootLines]?.startsWith('M.A.X. CORE') && core.state === 'checking') return;
     const next = window.setTimeout(() => setBootLines(n => n + 1), 110);
     return () => window.clearTimeout(next);
   }, [booting, bootLines, bootScript, core.state, finishBoot]);

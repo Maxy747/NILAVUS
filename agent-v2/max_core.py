@@ -83,6 +83,8 @@ SERVICES = {  # telemetry key -> (name, what it is, host, tailnet link)
 # Alert thresholds (the dashboard uses the same numbers).
 # A big media drive at 92% still has ~300 GB free: that's a warning, not an emergency.
 STORAGE_WARN, STORAGE_CRIT = 90, 98
+# Bookussy is a big media drive kept deliberately full: only warn when it's nearly out of room.
+STORAGE_WARN_BY_DRIVE = {"Bookussy": 97}
 TEMP_WARN, TEMP_CRIT = 75, 85
 
 # ----------------------------------------------------------------- context
@@ -107,8 +109,12 @@ def format_uptime(seconds):
     return f"{plural(hours, 'hour')} {plural(minutes, 'minute')}" if hours else plural(minutes, "minute")
 
 
-def storage_level(percent):
-    return "critical" if percent >= STORAGE_CRIT else "warning" if percent >= STORAGE_WARN else "ok"
+def storage_warn(name):
+    return STORAGE_WARN_BY_DRIVE.get(name, STORAGE_WARN)
+
+
+def storage_level(percent, name=""):
+    return "critical" if percent >= STORAGE_CRIT else "warning" if percent >= storage_warn(name) else "ok"
 
 
 def build_context():
@@ -139,7 +145,7 @@ def build_context():
             usage = shutil.disk_usage(path)
             used = round(100 * usage.used / usage.total, 1)
             storage.append({"name": name, "online": True, "usedPercent": used, "freeGb": round(usage.free / 1e9),
-                            "totalGb": round(usage.total / 1e9), "level": storage_level(used)})
+                            "totalGb": round(usage.total / 1e9), "level": storage_level(used, name)})
         except OSError:
             storage.append({"name": name, "online": False})
 
@@ -439,7 +445,7 @@ def build_facts(question, ctx, action=None):
         named = [d for d in drives if d["name"].lower().split()[0] in words]
         for d in named or drives:
             verdict = {"critical": f"CRITICAL (over {STORAGE_CRIT}%, nearly full)",
-                       "warning": f"WARNING (over {STORAGE_WARN}%, getting full but not urgent)", "ok": "OK"}[d["level"]]
+                       "warning": f"WARNING (over {storage_warn(d['name'])}%, getting full but not urgent)", "ok": "OK"}[d["level"]]
             facts.append(f"{d['name']}: {d['usedPercent']}% used, {d['freeGb']} GB free of {d['totalGb']} GB. Verdict: {verdict}.")
             # The UI shows every drive's numbers; the sentence must get the asked-about or critical ones right.
             if named or d["level"] != "ok":

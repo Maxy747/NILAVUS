@@ -20,6 +20,9 @@ export type Alert = { level: 'critical' | 'warning'; source: string; message: st
 // A big media drive at 92% still has ~300 GB free: a warning (shown red), not an emergency.
 export const STORAGE_WARN = 90;
 export const STORAGE_CRIT = 98;
+// Bookussy is kept deliberately full, so it only warns when it's nearly out of room.
+const STORAGE_WARN_BY_DRIVE: Record<string, number> = { bookussy: 97 };
+export const storageWarn = (name: string) => STORAGE_WARN_BY_DRIVE[name.toLowerCase()] ?? STORAGE_WARN;
 export const TEMP_WARN = 75;
 export const TEMP_CRIT = 85;
 
@@ -56,7 +59,7 @@ export function alerts(t: MaxTelemetry): Alert[] {
   }
   for (const drive of drives(t)) {
     if (!drive.online) list.push({ level: 'warning', source: drive.name, category: 'storage', message: `${drive.name} is not mounted.` });
-    else if (drive.usedPercent != null && drive.usedPercent >= STORAGE_WARN) {
+    else if (drive.usedPercent != null && drive.usedPercent >= storageWarn(drive.name)) {
       list.push({ level: drive.usedPercent >= STORAGE_CRIT ? 'critical' : 'warning', source: drive.name, category: 'storage',
         message: `${drive.name} storage is at ${drive.usedPercent.toFixed(1)}%.` });
     }
@@ -74,9 +77,16 @@ export type SystemStatus = 'NORMAL' | 'WARNING' | 'CRITICAL' | 'UNKNOWN';
 const worst = (t: MaxTelemetry, list: Alert[]): SystemStatus =>
   !t.live ? 'UNKNOWN' : list.some(a => a.level === 'critical') ? 'CRITICAL' : list.length ? 'WARNING' : 'NORMAL';
 
+/** How many machines are actually reporting. The status endpoint can answer while every heartbeat is stale. */
+export const nodesReporting = (t: MaxTelemetry) => t.live ? NODES.filter(name => t.nodes[name]?.online).length : 0;
+
 /** Machines, services and temperatures. Storage is separate so a full drive doesn't read as a broken system. */
 export const systemStatus = (t: MaxTelemetry, list = alerts(t)) => worst(t, list.filter(a => a.category === 'system'));
-export const storageStatus = (t: MaxTelemetry, list = alerts(t)) => worst(t, list.filter(a => a.category === 'storage'));
+/** Drives on an unreachable machine are unknown, so "no storage alerts" only means NORMAL when every machine reports. */
+export const storageStatus = (t: MaxTelemetry, list = alerts(t)): SystemStatus => {
+  const status = worst(t, list.filter(a => a.category === 'storage'));
+  return status === 'NORMAL' && nodesReporting(t) < NODES.length ? 'UNKNOWN' : status;
+};
 
 const RANK: Record<SystemStatus, number> = { UNKNOWN: 0, NORMAL: 1, WARNING: 2, CRITICAL: 3 };
 export const overallStatus = (t: MaxTelemetry, list = alerts(t)): SystemStatus => {
