@@ -298,7 +298,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
           <div className="max-prompt">
             <span aria-hidden="true">&gt;</span>
             <textarea ref={inputRef} rows={1} value={input} maxLength={600} disabled={core.state !== 'online'}
-              placeholder={core.state === 'online' ? (busy ? 'M.A.X. is working…' : 'Ask M.A.X.  (Enter to send, Shift+Enter for newline)')
+              placeholder={core.state === 'online' ? (busy ? 'M.A.X. is working…' : 'Ask M.A.X.')
                 : 'AI core offline'}
               aria-label="Message M.A.X." onChange={event => setInput(event.target.value)} onKeyDown={onKeyDown} />
             {busy

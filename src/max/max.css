@@ -364,6 +364,8 @@ html.max-open { overflow: hidden; }
 }
 
 @media (max-width: 480px) {
+  .max-shell { height: 100dvh; }
+  .max-console { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
   .max-header { padding: 10px 12px; }
   .max-header-status { order: 3; width: 100%; margin-left: 0; }
   .max-close { margin-left: auto; }
