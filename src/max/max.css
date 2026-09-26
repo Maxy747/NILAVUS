@@ -210,15 +210,19 @@ html.max-open { overflow: hidden; }
   overflow-y: auto;
   border-right: 1px solid var(--max-line);
   background: rgba(6, 13, 25, .6);
+}
+
+/* One blue scrollbar treatment for telemetry, chat, history and horizontal controls. */
+.max-shell, .max-shell * {
   scrollbar-width: thin;
   scrollbar-color: #46667f #07111e;
 }
-
-.max-panel::-webkit-scrollbar { width: 6px; }
-.max-panel::-webkit-scrollbar-track { background: #07111e; }
-.max-panel::-webkit-scrollbar-thumb { background: linear-gradient(#417b8a, #655e91); border-radius: 8px; border: 1px solid #132333; }
-.max-panel::-webkit-scrollbar-thumb:hover { background: #73a9bb; }
-.max-panel::-webkit-scrollbar-button { display: none; }
+.max-shell::-webkit-scrollbar, .max-shell *::-webkit-scrollbar { width: 6px; height: 6px; }
+.max-shell::-webkit-scrollbar-track, .max-shell *::-webkit-scrollbar-track { background: #07111e; }
+.max-shell::-webkit-scrollbar-thumb, .max-shell *::-webkit-scrollbar-thumb { background: #46667f; border-radius: 8px; border: 1px solid #132333; }
+.max-shell::-webkit-scrollbar-thumb:hover, .max-shell *::-webkit-scrollbar-thumb:hover { background: #73a9bb; }
+.max-shell::-webkit-scrollbar-button, .max-shell *::-webkit-scrollbar-button { display: none; }
+.max-shell::-webkit-scrollbar-corner, .max-shell *::-webkit-scrollbar-corner { background: #07111e; }
 
 .max-panel-toggle { display: none; }
 .max-panel-body { display: grid; gap: 0; padding: 8px 12px; }
