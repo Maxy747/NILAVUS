@@ -18,7 +18,8 @@ class TemperatureReportTests(unittest.TestCase):
         self.assertIn("average 70.0C", report)
         self.assertIn("CRITICAL", report)
         self.assertIn("11:29 IST", report)
-        self.assertIn("Coverage is incomplete", report)
+        self.assertIn("History has gaps", report)
+        self.assertLess(len(report.split()), 130)
         self.assertIn("no saved readings today", report)
 
     def test_missing_and_tie(self):

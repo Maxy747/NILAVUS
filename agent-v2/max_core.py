@@ -732,7 +732,7 @@ def temperature_report(ctx, saved, now=None):
     else:
         paragraphs.append(" ".join(f"{label}: {temps[n]:.0f}C right now." if n in temps else
                                    f"{label}: current temperature unavailable." for n, label in labels.items()))
-    paragraphs.append(f"Today, {now:%d %b}, 00:00–{now:%H:%M} IST (saved one-minute readings):")
+    paragraphs.append(f"Today so far ({now:%d %b}, IST):")
     for name, label in labels.items():
         samples = []
         for row in ((saved or {}).get("nodes", {}).get(name) or []):
@@ -752,22 +752,18 @@ def temperature_report(ctx, saved, now=None):
         peak = max(samples, key=lambda s: s[1])[0]
         warm = [(t, v) for t, v in samples if v >= TEMP_WARN]
         critical = sum(v >= TEMP_CRIT for v in values)
-        verdict = (f"CRITICAL high-temperature readings: {critical} samples at or above {TEMP_CRIT}C" if critical else
-                   f"WARNING: {len(warm)} samples at or above {TEMP_WARN}C" if warm else
-                   f"All recorded temperatures stayed below the {TEMP_WARN}C warning threshold")
+        verdict = ("CRITICAL temperature spike" if critical else
+                   "High-temperature warning" if warm else "Below warning level")
         variation = ("too few samples to assess variation" if len(values) < 2 else
                      "relatively steady" if high - low < 10 else "noticeable fluctuations" if high - low < 20 else "large fluctuations")
-        text = (f"{label}: min {low:.1f}C / average {avg:.1f}C / max {high:.1f}C "
-                f"(peak at {peak:%H:%M} IST). {verdict}; {variation} ({high-low:.1f}C range). "
-                f"{len(samples)} readings, {samples[0][0]:%H:%M}–{samples[-1][0]:%H:%M} IST.")
+        text = (f"{label.split(' (')[0]}: {low:.0f}–{high:.0f}C, average {avg:.1f}C. "
+                f"{verdict}; {variation}.")
         if warm:
-            text += f" First high reading {warm[0][0]:%H:%M}, last {warm[-1][0]:%H:%M} IST; not necessarily continuous."
+            text += f" Peak at {peak:%H:%M} IST; cause unconfirmed."
         gaps = sum((b[0] - a[0]).total_seconds() > 180 for a, b in zip(samples, samples[1:]))
         if gaps or (samples[0][0] - midnight).total_seconds() > 180 or (now - samples[-1][0]).total_seconds() > 180:
-            text += f" Coverage is incomplete ({gaps} internal gaps over 3 minutes); missing periods are not evidence of normal temperatures."
+            text += " History has gaps."
         paragraphs.append(text)
-    paragraphs.append(f"These are monitoring thresholds ({TEMP_WARN}C warning / {TEMP_CRIT}C critical), not hardware limits. "
-                      "Sampled temperatures alone cannot confirm an overheating shutdown or rule out brief spikes.")
     return "\n\n".join(paragraphs)
 
 
