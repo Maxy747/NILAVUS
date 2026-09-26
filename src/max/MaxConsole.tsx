@@ -287,6 +287,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
               {entry.pending && !entry.text
                 ? <p className="max-processing">M.A.X. // PROCESSING<span className="max-bar" aria-hidden="true" /></p>
                 : <p>{linkify(entry.text)}{entry.pending && <span className="max-cursor" aria-hidden="true">_</span>}</p>}
+              <div className={live && entry.rows?.some(([label]) => label === 'DOSIMETER MIN' || label === 'NASIG MIN') ? 'max-temperature-layout' : undefined}>
               {entry.rows && entry.rows.length > 0 && <dl className="max-rows">{entry.rows.map(([label, value], index) =>
                 [<dt key={`l${index}`}>{label}</dt>, <dd key={`v${index}`}>{linkify(value)}</dd>])}</dl>}
               {live && entry.kind === 'max' && entry.rows?.some(([label]) => label === 'DOSIMETER MIN' || label === 'NASIG MIN') &&
@@ -294,6 +295,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
                   <TemperatureGraph />
                   <small className="dim">Live last 24 hours · summary above reflects when you asked</small>
                 </section>}
+              </div>
               {live && entry.kind === 'alert' && core.state === 'online' && <button type="button" className="max-inline" disabled={busy}
                 onClick={() => void send({ action: 'alerts', label: '[ ANALYZE ALERTS ]' })}>[ ANALYZE ]</button>}
               {(entry.corrected || entry.seconds != null) && <footer>
