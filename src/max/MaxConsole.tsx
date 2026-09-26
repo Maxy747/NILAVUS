@@ -3,6 +3,7 @@ import { fetchHealth, fetchHistory, MAX_URL, streamChat, type ChatTurn, type Cor
 import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, nodesReporting, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
 import './max.css';
 import TemperatureGraph from '../TemperatureGraph';
+import { chatExpired } from './chatDay';
 
 type Entry = {
   id: number; kind: 'max' | 'user' | 'alert' | 'system'; text: string; time: string;
@@ -230,7 +231,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send({ text: input }); }
   };
 
-  const clear = () => {
+  const clear = (daily = false) => {
     abortRef.current?.abort();
     const t = telemetryRef.current;
     announcedRef.current = deriveAlerts(t).map(alertKey); // the fresh greeting names them all
@@ -245,9 +246,27 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     const fresh = newSession();
     setSession(fresh);
     saveSession(fresh);
-    setLog([{ id: nextId.current++, kind: 'system', text: saved ? 'New conversation. The previous one is in HISTORY.' : 'Conversation cleared.', time: clock() },
+    setLog([{ id: nextId.current++, kind: 'system', text: daily ? 'Daily reset · 06:00 IST. Previous conversation saved in HISTORY.' : saved ? 'New conversation. The previous one is in HISTORY.' : 'Conversation cleared.', time: clock() },
       { id: nextId.current++, kind: 'max', text: greeting(t), time: clock() }]);
   };
+
+  const rolloverRef = useRef(() => {});
+  rolloverRef.current = () => {
+    // Finish an in-flight answer before archiving it; never discard a streamed reply.
+    if (!busy && chatExpired(session.started)) clear(true);
+  };
+  useEffect(() => {
+    const check = () => rolloverRef.current();
+    check();
+    const interval = window.setInterval(check, 1000);
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', check);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', check);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, []);
 
   const openHistory = async () => {
     setHistoryOpen(true);
@@ -426,7 +445,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
               : <button type="button" disabled={!input.trim() || core.state !== 'online'} onClick={() => void send({ text: input })}>SEND</button>}
             <button type="button" className="max-clear" onClick={() => void (historyOpen ? closeHistory() : openHistory())}
               aria-pressed={historyOpen} aria-label="Chat history">HISTORY</button>
-            <button type="button" className="max-clear" onClick={clear} aria-label="Save this conversation and start a new one">CLR</button>
+            <button type="button" className="max-clear" onClick={() => clear()} aria-label="Save this conversation and start a new one">CLR</button>
           </div>
         </section>
       </div>}
