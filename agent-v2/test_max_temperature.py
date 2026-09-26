@@ -13,9 +13,12 @@ class TemperatureReportTests(unittest.TestCase):
         saved = {"nodes": {"nilavus": [
             {"sampled_at": "2026-09-27T05:58:00Z", "temperature_c": 50},
             {"sampled_at": "2026-09-27T05:59:00Z", "temperature_c": 90}]}}
-        report = temperature_report(self.ctx, saved, self.now)
+        rows = []
+        report = temperature_report(self.ctx, saved, self.now, rows=rows)
         self.assertIn("laptop) is hotter", report)
-        self.assertIn("average 70.0C", report)
+        self.assertIn(("DOSIMETER AVG", "70.0C"), rows)
+        self.assertIn(("DOSIMETER MIN", "50.0C"), rows)
+        self.assertIn(("DOSIMETER MAX", "90.0C"), rows)
         self.assertIn("CRITICAL", report)
         self.assertIn("11:29 IST", report)
         self.assertIn("History has gaps", report)

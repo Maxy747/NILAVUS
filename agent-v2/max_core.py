@@ -712,7 +712,7 @@ def clean_history(messages):
     return history
 
 
-def temperature_report(ctx, saved, now=None):
+def temperature_report(ctx, saved, now=None, rows=None):
     """Deterministic report: sampled readings, not a thermal-shutdown diagnosis."""
     ist = timezone(timedelta(hours=5, minutes=30))
     now = (now or datetime.now(timezone.utc)).astimezone(ist)
@@ -756,10 +756,13 @@ def temperature_report(ctx, saved, now=None):
                    "High-temperature warning" if warm else "Below warning level")
         variation = ("too few samples to assess variation" if len(values) < 2 else
                      "relatively steady" if high - low < 10 else "noticeable fluctuations" if high - low < 20 else "large fluctuations")
-        text = (f"{label.split(' (')[0]}: {low:.0f}–{high:.0f}C, average {avg:.1f}C. "
-                f"{verdict}; {variation}.")
+        if rows is not None:
+            short = label.split(' (')[0].upper()
+            rows.extend([(f"{short} MIN", f"{low:.1f}C"), (f"{short} AVG", f"{avg:.1f}C"), (f"{short} MAX", f"{high:.1f}C")])
+        text = f"{label.split(' (')[0]}: {verdict}; {variation}."
+        text += f" Peak {high:.0f}C at {peak:%H:%M} IST."
         if warm:
-            text += f" Peak at {peak:%H:%M} IST; cause unconfirmed."
+            text += " Cause unconfirmed."
         gaps = sum((b[0] - a[0]).total_seconds() > 180 for a, b in zip(samples, samples[1:]))
         if gaps or (samples[0][0] - midnight).total_seconds() > 180 or (now - samples[-1][0]).total_seconds() > 180:
             text += " History has gaps."
@@ -784,15 +787,15 @@ def chat_events(messages, action):
 
     ctx = build_context()
     facts, checks, rows = build_facts(question, ctx, action)
-    yield {"type": "meta", "question": question, "rows": rows, "telemetry": ctx["telemetry"], "status": ctx["status"], "storageStatus": ctx["storageStatus"]}
-
     if action == "temps":
         saved = fetch_json(env("MAX_TEMPERATURE_HISTORY_URL", "https://gibzoyvvmwvprkubfhvc.supabase.co/functions/v1/temperature-history"), timeout=8)
-        text = temperature_report(ctx, saved)
+        text = temperature_report(ctx, saved, rows=rows)
+        yield {"type": "meta", "question": question, "rows": rows, "telemetry": ctx["telemetry"], "status": ctx["status"], "storageStatus": ctx["storageStatus"]}
         yield {"type": "token", "text": text}
         yield {"type": "done", "answer": text, "corrected": False, "seconds": round(time.time() - started, 1)}
         return
 
+    yield {"type": "meta", "question": question, "rows": rows, "telemetry": ctx["telemetry"], "status": ctx["status"], "storageStatus": ctx["storageStatus"]}
     hint = "\nMention anything marked CRITICAL or WARNING." if any(w in f for f in facts for w in ("CRITICAL", "WARNING")) else ""
     prompt = history[:-1] + [{"role": "user", "content":
                               ("FACTS:\n" + "\n".join(facts) + f"\n\nQuestion: {question}{hint}") if facts else question}]
