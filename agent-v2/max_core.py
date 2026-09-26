@@ -29,7 +29,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+import math
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HOME = os.path.expanduser("~")
@@ -711,6 +712,65 @@ def clean_history(messages):
     return history
 
 
+def temperature_report(ctx, saved, now=None):
+    """Deterministic report: sampled readings, not a thermal-shutdown diagnosis."""
+    ist = timezone(timedelta(hours=5, minutes=30))
+    now = (now or datetime.now(timezone.utc)).astimezone(ist)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    labels = {"nilavus": "Dosimeter (the laptop)", "nilavus-storage": "NASig (the NAS)"}
+    temps = {n: m.get("temperatureC") for n, m in ctx["nodes"].items()
+             if n in labels and m.get("online") and isinstance(m.get("temperatureC"), (int, float))
+             and math.isfinite(m["temperatureC"])}
+    paragraphs = []
+    if len(temps) == 2:
+        hot, cool = sorted(temps, key=temps.get, reverse=True)
+        if temps[hot] == temps[cool]:
+            paragraphs.append(f"Dosimeter (the laptop) and NASig (the NAS) are both at {temps[hot]:.0f}C right now.")
+        else:
+            paragraphs.append(f"The {labels[hot]} is hotter, with a temperature of {temps[hot]:.0f}C. "
+                              f"The {labels[cool]} is cooler, with a temperature of {temps[cool]:.0f}C.")
+    else:
+        paragraphs.append(" ".join(f"{label}: {temps[n]:.0f}C right now." if n in temps else
+                                   f"{label}: current temperature unavailable." for n, label in labels.items()))
+    paragraphs.append(f"Today, {now:%d %b}, 00:00–{now:%H:%M} IST (saved one-minute readings):")
+    for name, label in labels.items():
+        samples = []
+        for row in ((saved or {}).get("nodes", {}).get(name) or []):
+            try:
+                stamp = datetime.fromisoformat(row["sampled_at"].replace("Z", "+00:00")).astimezone(ist)
+                temp = float(row["temperature_c"])
+                if midnight <= stamp <= now and math.isfinite(temp) and -40 <= temp <= 150:
+                    samples.append((stamp, temp))
+            except (KeyError, TypeError, ValueError):
+                continue
+        samples.sort()
+        if not samples:
+            paragraphs.append(f"{label}: {'history unavailable' if saved is None else 'no saved readings today'}; I cannot assess the day.")
+            continue
+        values = [v for _, v in samples]
+        low, high, avg = min(values), max(values), sum(values) / len(values)
+        peak = max(samples, key=lambda s: s[1])[0]
+        warm = [(t, v) for t, v in samples if v >= TEMP_WARN]
+        critical = sum(v >= TEMP_CRIT for v in values)
+        verdict = (f"CRITICAL high-temperature readings: {critical} samples at or above {TEMP_CRIT}C" if critical else
+                   f"WARNING: {len(warm)} samples at or above {TEMP_WARN}C" if warm else
+                   f"All recorded temperatures stayed below the {TEMP_WARN}C warning threshold")
+        variation = ("too few samples to assess variation" if len(values) < 2 else
+                     "relatively steady" if high - low < 10 else "noticeable fluctuations" if high - low < 20 else "large fluctuations")
+        text = (f"{label}: min {low:.1f}C / average {avg:.1f}C / max {high:.1f}C "
+                f"(peak at {peak:%H:%M} IST). {verdict}; {variation} ({high-low:.1f}C range). "
+                f"{len(samples)} readings, {samples[0][0]:%H:%M}–{samples[-1][0]:%H:%M} IST.")
+        if warm:
+            text += f" First high reading {warm[0][0]:%H:%M}, last {warm[-1][0]:%H:%M} IST; not necessarily continuous."
+        gaps = sum((b[0] - a[0]).total_seconds() > 180 for a, b in zip(samples, samples[1:]))
+        if gaps or (samples[0][0] - midnight).total_seconds() > 180 or (now - samples[-1][0]).total_seconds() > 180:
+            text += f" Coverage is incomplete ({gaps} internal gaps over 3 minutes); missing periods are not evidence of normal temperatures."
+        paragraphs.append(text)
+    paragraphs.append(f"These are monitoring thresholds ({TEMP_WARN}C warning / {TEMP_CRIT}C critical), not hardware limits. "
+                      "Sampled temperatures alone cannot confirm an overheating shutdown or rule out brief spikes.")
+    return "\n\n".join(paragraphs)
+
+
 def chat_events(messages, action):
     """Yields event dicts: meta -> token* -> done (or error)."""
     global last_used
@@ -729,6 +789,13 @@ def chat_events(messages, action):
     ctx = build_context()
     facts, checks, rows = build_facts(question, ctx, action)
     yield {"type": "meta", "question": question, "rows": rows, "telemetry": ctx["telemetry"], "status": ctx["status"], "storageStatus": ctx["storageStatus"]}
+
+    if action == "temps":
+        saved = fetch_json(env("MAX_TEMPERATURE_HISTORY_URL", "https://gibzoyvvmwvprkubfhvc.supabase.co/functions/v1/temperature-history"), timeout=8)
+        text = temperature_report(ctx, saved)
+        yield {"type": "token", "text": text}
+        yield {"type": "done", "answer": text, "corrected": False, "seconds": round(time.time() - started, 1)}
+        return
 
     hint = "\nMention anything marked CRITICAL or WARNING." if any(w in f for f in facts for w in ("CRITICAL", "WARNING")) else ""
     prompt = history[:-1] + [{"role": "user", "content":
