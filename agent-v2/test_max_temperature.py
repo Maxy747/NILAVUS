@@ -15,7 +15,7 @@ class TemperatureReportTests(unittest.TestCase):
             {"sampled_at": "2026-09-27T05:59:00Z", "temperature_c": 90}]}}
         rows = []
         report = temperature_report(self.ctx, saved, self.now, rows=rows)
-        self.assertIn("laptop) is hotter", report)
+        self.assertTrue(report.startswith("The Dosimeter is hotter [50C]. The NASig is cooler [40C]"))
         self.assertIn(("DOSIMETER AVG", "70.0C"), rows)
         self.assertIn(("DOSIMETER MIN", "50.0C"), rows)
         self.assertIn(("DOSIMETER MAX", "90.0C"), rows)

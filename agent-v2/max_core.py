@@ -727,8 +727,8 @@ def temperature_report(ctx, saved, now=None, rows=None):
         if temps[hot] == temps[cool]:
             paragraphs.append(f"Dosimeter (the laptop) and NASig (the NAS) are both at {temps[hot]:.0f}C right now.")
         else:
-            paragraphs.append(f"The {labels[hot]} is hotter, with a temperature of {temps[hot]:.0f}C. "
-                              f"The {labels[cool]} is cooler, with a temperature of {temps[cool]:.0f}C.")
+            paragraphs.append(f"The {labels[hot].split(' (')[0]} is hotter [{temps[hot]:.0f}C]. "
+                              f"The {labels[cool].split(' (')[0]} is cooler [{temps[cool]:.0f}C]")
     else:
         paragraphs.append(" ".join(f"{label}: {temps[n]:.0f}C right now." if n in temps else
                                    f"{label}: current temperature unavailable." for n, label in labels.items()))
