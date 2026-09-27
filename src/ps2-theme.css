@@ -426,6 +426,31 @@ main::before {
   transform: scaleX(.88);
 }
 
+/* Explicit end-face clearance: the host label sits above the inner border. */
+.health-face.health-back { padding-bottom: 34px; grid-template-rows: minmax(0, 1fr) auto; }
+.health-face.health-back > span { margin-bottom: 0; transform: scaleX(.88); }
+.health-back .temperature-history svg { max-height: 90px; }
+.health-card, .storage-flip-card { perspective: 1200px; }
+.health-card-flip { overflow: visible; filter: none; will-change: transform; transform-style: preserve-3d; transition: transform .4s ease; }
+.health-card-held .health-card-flip { filter: none; transform: rotateY(180deg); }
+.health-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.health-face.health-front, .health-card-held .health-front { opacity: 1; visibility: visible; }
+.health-face.health-back, .health-card-held .health-back { opacity: 1; visibility: visible; transform: rotateY(180deg); }
+.health-drive-panel.storage-flip-card { padding: 0; overflow: visible; cursor: pointer; }
+.storage-flip-inner { position: relative; min-height: inherit; border-radius: inherit; transform-style: preserve-3d; transition: transform .4s ease; }
+.storage-held .storage-flip-inner { transform: rotateY(180deg); }
+.storage-front, .storage-back { padding: 22px; min-height: inherit; border-radius: inherit; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.storage-front { display: flex; flex-direction: column; }
+.storage-back { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 16px; transform: rotateY(180deg); background: linear-gradient(145deg, #10233a, #070e1a); pointer-events: none; }
+.storage-back > span { color: #657f9b; font: 600 10px var(--mono); text-align: center; letter-spacing: .14em; }
+.storage-flip-card:focus-visible { outline: 1px solid #66e1eb; outline-offset: 4px; }
+.about-max { margin: 32px 0; padding: 24px; border: 1px solid #42607a; border-radius: 14px; background: #0d1d30aa; }
+.about-max h3 { margin: 12px 0; color: #66e1eb; font: 700 24px var(--mono); }
+.about-max p { font-size: 15px; line-height: 1.65; }
+.about-max small { color: #a6bad0; font: 11px var(--mono); }
+@media (max-width: 430px) { .storage-front, .storage-back { padding: 18px; } }
+@media (prefers-reduced-motion: reduce) { .storage-flip-inner, .health-card-flip { transition: none; } }
+
 .health-card-held {
   border-color: #86caff8a;
   box-shadow: inset 0 1px 0 #e5f8ff29, 0 20px 58px #000615aa, 0 0 24px #4baeff55;

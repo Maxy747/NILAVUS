@@ -11,3 +11,8 @@
 .health-face.health-back { grid-template-rows: 1fr auto; gap: 8px; }
 .health-face.health-back > span { font-size: clamp(20px, 3vw, 32px); margin-bottom: 12px; }
 .max-thermal-block { margin-top: auto; }
+.history-selector { max-width: 100%; border: 1px solid #36506a; border-radius: 4px; padding: 3px 5px; background: #091624; color: #bfd3e6; font: 600 10px var(--mono, monospace); letter-spacing: .04em; cursor: pointer; }
+.history-selector:focus-visible { outline: 1px solid #66e1eb; outline-offset: 2px; }
+.temperature-heading { align-items: center; }
+.history-drive-wd { color: #6ae4a5; fill: #6ae4a5; }
+.history-drive-bookussy { color: #f2bc72; fill: #f2bc72; }

@@ -1,5 +1,15 @@
 # Temperature history
 
+## Disk history
+
+`20260927171000_disk_history.sql` adds independently saved one-minute drive usage
+readings (30-day retention). Only online, valid telemetry from each drive's owner
+is captured; no historical backfill. The read-only `disk-history` function exposes
+the last 24 hours for Dosimeter, NASig, WD 1 TB and Bookussy. RLS prevents direct
+browser reads/writes. Run `supabase/tests/disk_history.sql` for rolled-back tests.
+M.A.X.'s sidebar selector switches between temperature and disk usage; holding
+the storage card reveals the disk graph. Gaps and stale samples stay visible.
+
 The `node_status` trigger saves the latest valid temperature in each UTC minute,
 independently of browser activity. Both the normal and relay heartbeat paths are
 covered. No historical temperatures are fabricated or backfilled. Old samples

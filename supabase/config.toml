@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.temperature-history]
 verify_jwt = false
+
+[functions.disk-history]
+verify_jwt = false

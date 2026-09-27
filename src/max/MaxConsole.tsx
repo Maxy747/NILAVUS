@@ -396,7 +396,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
               <h3>ALERTS</h3>
               {alertList.length ? <ul>{alertList.map(a => <li key={a.message} className={a.level}>{a.message}</li>)}</ul> : <p className="dim">None active.</p>}
             </div>}
-            <div className="max-block max-thermal-block"><TemperatureGraph /></div>
+            <div className="max-block max-thermal-block"><TemperatureGraph selectable /></div>
           </div>
         </aside>
 
