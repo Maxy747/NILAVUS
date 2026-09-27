@@ -23,6 +23,16 @@ try {
       return route.fulfill({ json: { generatedAt: new Date(now).toISOString(), nodes: Object.fromEntries(['Dosimeter', 'NASig', 'WD 1 TB', 'Bookussy'].map((name, n) => [name,
         Array.from({ length: 120 }, (_, i) => ({ sampled_at: new Date(now - (119 - i) * 60000).toISOString(), used_percent: [65, 8, 62, 92][n] + i / 1000 }))])) } });
     });
+    await page.route('**/resource-history', route => {
+      const now = Date.now();
+      return route.fulfill({ json: { generatedAt: new Date(now).toISOString(), nodes: Object.fromEntries(['nilavus', 'nilavus-storage'].map((name, n) => [name,
+        Array.from({ length: 120 }, (_, i) => ({ sampled_at: new Date(now - (119 - i) * 60000).toISOString(), cpu_percent: 20 + n * 10 + Math.sin(i / 10) * 10, memory_percent: 50 + n * 5 }))])) } });
+    });
+    await page.route('**/smart-history', route => {
+      const now = Date.now();
+      return route.fulfill({ json: { generatedAt: new Date(now).toISOString(), nodes: Object.fromEntries(['Dosimeter', 'NASig', 'WD 1 TB', 'Bookussy'].map((name, n) => [name,
+        Array.from({ length: 96 }, (_, i) => ({ sampled_at: new Date(now - (95 - i) * 900000).toISOString(), power_on_hours: [10000, 1500, 14000, 1700][n] + Math.floor(i / 4) }))])) } });
+    });
     await page.goto(process.argv[3] || 'http://127.0.0.1:5173/');
     await page.getByRole('button', { name: 'ACCESS', exact: true }).click();
     await page.locator('.access-gateway').waitFor({ state: 'detached' });
@@ -41,6 +51,21 @@ try {
       assert(egg.y + egg.height <= bounds.y + bounds.height + 1);
       await page.screenshot({ path: join(tmpdir(), `nilavus-temperature-card-${width}.png`) });
       await page.keyboard.up('Space');
+      await page.waitForTimeout(450);
+      await card.getByRole('button', { name: 'History ↗' }).click();
+      await page.waitForTimeout(450);
+      for (const metric of ['cpu', 'ram']) {
+        await card.getByRole('combobox', { name: 'History graph' }).selectOption(metric);
+        await page.waitForFunction(m => [...document.querySelectorAll('.health-card-held .temperature-trace')].some(p => (p.getAttribute('d') || '').length > 100) && !!document.querySelector(`[aria-label="Saved ${m} history for the past 24 hours"]`), metric);
+        const b = await card.boundingBox();
+        const g = await card.locator('.temperature-history').boundingBox();
+        const label = await card.locator('.health-back > span').boundingBox();
+        assert(g.x >= b.x && g.x + g.width <= b.x + b.width + 1);
+        assert(g.y + g.height <= label.y + 1);
+        await page.screenshot({ path: join(tmpdir(), `nilavus-${metric}-card-${width}.png`) });
+      }
+      await card.getByRole('button', { name: 'Back ↩' }).click();
+      await page.waitForTimeout(450);
     }
     const storage = page.locator('.storage-flip-card');
     await storage.scrollIntoViewIfNeeded();
@@ -54,6 +79,18 @@ try {
     assert(storageGraph.y >= storageBounds.y && storageGraph.y + storageGraph.height <= storageBounds.y + storageBounds.height + 1);
     await page.screenshot({ path: join(tmpdir(), `nilavus-storage-flip-${width}.png`) });
     await page.keyboard.up('Space');
+    await page.waitForTimeout(450);
+    await storage.getByRole('button', { name: 'History ↗' }).click();
+    await page.waitForTimeout(450);
+    await storage.getByRole('combobox').selectOption('smart');
+    await storage.getByText('Lifetime powered-on hours · not reboot uptime').waitFor();
+    await page.waitForTimeout(150);
+    const smartBounds = await storage.locator('.temperature-history').boundingBox();
+    const cardBounds = await storage.boundingBox();
+    assert(smartBounds.x >= cardBounds.x && smartBounds.x + smartBounds.width <= cardBounds.x + cardBounds.width + 1);
+    assert(smartBounds.y >= cardBounds.y && smartBounds.y + smartBounds.height <= cardBounds.y + cardBounds.height);
+    await page.screenshot({ path: join(tmpdir(), `nilavus-smart-card-${width}.png`) });
+    await storage.getByRole('button', { name: 'Back ↩' }).click();
     await page.keyboard.press('Control+k');
     if (width < 760) await page.locator('.max-panel-toggle').click();
     await page.locator('.max-thermal-block').scrollIntoViewIfNeeded();
@@ -61,6 +98,10 @@ try {
     await page.getByRole('combobox', { name: 'History graph' }).selectOption('disk');
     await page.waitForFunction(() => document.querySelectorAll('.max-thermal-block .temperature-trace').length === 4);
     assert.equal(await page.locator('.max-thermal-block .temperature-legend small').count(), 4);
+    for (const metric of ['cpu', 'ram', 'smart']) {
+      await page.locator('.max-thermal-block').getByRole('combobox').selectOption(metric);
+      await page.waitForFunction(n => document.querySelectorAll('.max-thermal-block .temperature-trace').length === n, metric === 'smart' ? 4 : 2);
+    }
     await page.screenshot({ path: join(tmpdir(), `nilavus-temperature-max-${width}.png`) });
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Open the secret NILAVUS about page' }).click();

@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import urllib.request
+from smart_runtime import enrich
 
 
 METRICS_URL = os.environ.get("DOSIMETER_METRICS_URL", "http://127.0.0.1:8765/api/node")
@@ -19,6 +20,7 @@ def main() -> None:
     with urllib.request.urlopen(METRICS_URL, timeout=8) as response:
         payload = json.load(response)
     payload["nodeName"] = "nilavus"
+    enrich(payload.get("services", {}).get("_drives", []), {"Dosimeter": "/"})
 
     errors = []
     for address in (None, "104.21.28.141", "172.67.170.219"):

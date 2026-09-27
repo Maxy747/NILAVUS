@@ -12,3 +12,9 @@ verify_jwt = false
 
 [functions.disk-history]
 verify_jwt = false
+
+[functions.resource-history]
+verify_jwt = false
+
+[functions.smart-history]
+verify_jwt = false

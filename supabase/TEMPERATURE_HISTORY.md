@@ -1,5 +1,31 @@
 # Temperature history
 
+## SMART lifetime power-on hours
+
+`agent-v2/smart_runtime.py` resolves the physical drive from each mounted volume
+using findmnt/lsblk (no fixed /dev/sdX mapping). Reads `smartctl -A -j -n standby`
+every 15 minutes; sleeping/unsupported drives return no value, never zero. No
+self-tests, SMART enable/disable commands or disk configuration changes. Only
+the normalized power-on hours and capture timestamp leave the server; serials
+and full SMART reports stay local. `/run/nilavus-smart-runtime.json` caches results.
+`smart_history` stores unique captures for 30 days; `smart-history` exposes the
+last 24 hours. Graph values are lifetime hours, not OS uptime or daily online hours.
+The storage card's History button allows switching disk usage / SMART hours;
+M.A.X. also includes SMART hours. Charts do not backfill or extrapolate counters.
+Deploy helper alongside `dosimeter_cloud_push.py` on Dosimeter; NASig's existing
+timer uses `storage_cloud_push.py` installed as `telemetry_push.py`.
+
+## CPU / RAM history
+
+`20260927180000_resource_history.sql` captures each host's latest CPU and RAM
+percentage per minute, retained for 30 days independently of browsers. Missing
+metrics remain null (never converted to zero), and the public read-only
+`resource-history` endpoint exposes only the last 24 hours. Collection starts at
+deployment. Tests: `supabase/tests/resource_history.sql` (rolled back).
+Use the health card's History button to keep its back open and select thermal,
+CPU or RAM history; hold-to-preview still works. M.A.X. offers the same choices
+plus disk usage. CPU/RAM share a cached endpoint request.
+
 ## Disk history
 
 `20260927171000_disk_history.sql` adds independently saved one-minute drive usage
