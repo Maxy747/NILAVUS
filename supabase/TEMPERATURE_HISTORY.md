@@ -10,7 +10,7 @@ the normalized power-on hours and capture timestamp leave the server; serials
 and full SMART reports stay local. `/run/nilavus-smart-runtime.json` caches results.
 `smart_history` stores unique captures for 30 days; `smart-history` exposes the
 last 24 hours. Graph values are lifetime hours, not OS uptime or daily online hours.
-The storage card's History button allows switching disk usage / SMART hours;
+Click/tap the storage card to flip it; its selector switches disk usage / SMART hours;
 M.A.X. also includes SMART hours. Charts do not backfill or extrapolate counters.
 Deploy helper alongside `dosimeter_cloud_push.py` on Dosimeter; NASig's existing
 timer uses `storage_cloud_push.py` installed as `telemetry_push.py`.
@@ -22,8 +22,8 @@ percentage per minute, retained for 30 days independently of browsers. Missing
 metrics remain null (never converted to zero), and the public read-only
 `resource-history` endpoint exposes only the last 24 hours. Collection starts at
 deployment. Tests: `supabase/tests/resource_history.sql` (rolled back).
-Use the health card's History button to keep its back open and select thermal,
-CPU or RAM history; hold-to-preview still works. M.A.X. offers the same choices
+Click/tap a health card to flip between live metrics and three simultaneous
+thermal, CPU and RAM graphs (Space/Enter also toggle). M.A.X. offers these choices
 plus disk usage. CPU/RAM share a cached endpoint request.
 
 ## Disk history

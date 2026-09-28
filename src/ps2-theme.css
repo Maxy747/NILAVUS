@@ -430,11 +430,23 @@ main::before {
 .health-face.health-back { padding-bottom: 34px; grid-template-rows: minmax(0, 1fr) auto; }
 .health-face.health-back > span { margin-bottom: 0; transform: scaleX(.88); }
 .health-back .temperature-history svg { max-height: 90px; }
-.health-history-open, .health-history-close { border: 1px solid #36506a; border-radius: 4px; background: #091624; color: #a6c5dc; font: 600 9px var(--mono); cursor: pointer; padding: 4px 7px; }
-.health-history-open { position: absolute; right: 16px; bottom: 5px; }
-.health-history-close { position: absolute; right: 16px; bottom: 9px; z-index: 3; }
+.health-history-overview { width: 100%; min-width: 0; position: relative; z-index: 1; }
+.health-history-heading { display: flex; justify-content: space-between; margin-bottom: 10px; color: #abc2d7; font: 600 9px var(--mono); letter-spacing: .1em; }
+.health-history-heading small { font-size: 8px; color: #7f98af; }
+.health-history-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.health-history-charts .temperature-history { padding: 6px; border: 1px solid #44627c42; border-radius: 6px; background: #06111c70; }
+.health-history-charts .temperature-heading b { font-size: 9px; letter-spacing: .04em; }
+.health-back .health-history-charts .temperature-history svg { max-height: 54px; }
+@media (max-width: 430px) {
+  .health-history-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .health-history-charts > :first-child { grid-column: 1 / -1; }
+  .health-history-charts .temperature-history { padding: 4px 6px; }
+  .health-back .health-history-charts .temperature-history svg { max-height: 42px; }
+  .health-history-heading { margin-bottom: 5px; }
+}
+.health-card[role="button"] { cursor: pointer; }
+.health-card[role="button"]:focus-visible { outline: 1px solid #66e1eb; outline-offset: 4px; }
 .health-card-held .health-back { pointer-events: auto; }
-.health-history-open:focus-visible, .health-history-close:focus-visible { outline: 1px solid #66e1eb; outline-offset: 2px; }
 .health-card, .storage-flip-card { perspective: 1200px; }
 .health-card-flip { overflow: visible; filter: none; will-change: transform; transform-style: preserve-3d; transition: transform .4s ease; }
 .health-card-held .health-card-flip { filter: none; transform: rotateY(180deg); }

@@ -82,9 +82,7 @@ export default function Home() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [aboutLeaving, setAboutLeaving] = useState(false);
   const [modeAnimating, setModeAnimating] = useState(false);
-  const [heldHealthCard, setHeldHealthCard] = useState<NodeName | null>(null);
   const [pinnedHealthCard, setPinnedHealthCard] = useState<NodeName | null>(null);
-  const [storageHeld, setStorageHeld] = useState(false);
   const [storagePinned, setStoragePinned] = useState(false);
   const modeAnimationTimer = useRef<number | null>(null);
   const gatewayShapesRef = useRef<HTMLDivElement | null>(null);
@@ -347,15 +345,6 @@ export default function Home() {
     event.currentTarget.style.setProperty('--button-glow-y', '50%');
   };
 
-  const startHealthHold = (nodeName: NodeName, event: ReactPointerEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest('button, select')) return;
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    playSound('click');
-    setHeldHealthCard(nodeName);
-  };
-
-  const stopHealthHold = () => setHeldHealthCard(null);
-
   const moveGatewayShapes = (event: ReactPointerEvent<HTMLDivElement>) => {
     const container = event.currentTarget;
     const pointerX = event.clientX;
@@ -517,26 +506,24 @@ export default function Home() {
         <div className="health-grid">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => {
           const node = health?.nodes[nodeName];
           const state = node?.online ? 'online' : health ? 'offline' : 'checking';
-          const held = heldHealthCard === nodeName || pinnedHealthCard === nodeName;
-          return <article className={`health-card ${state} ${held ? 'health-card-held' : ''}`} key={nodeName} tabIndex={0} onKeyDown={event => { if (event.target !== event.currentTarget) return; if (event.key === 'Escape') { setPinnedHealthCard(null); stopHealthHold(); } if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); setHeldHealthCard(nodeName); } }} onKeyUp={event => { if (event.target === event.currentTarget && (event.key === ' ' || event.key === 'Enter')) stopHealthHold(); }} onBlur={stopHealthHold} onPointerDown={event => startHealthHold(nodeName, event)} onPointerUp={stopHealthHold} onPointerCancel={stopHealthHold} onPointerLeave={stopHealthHold} onContextMenu={event => event.preventDefault()} aria-label={`${nodeName} system health. Hold to preview temperature history, or choose History to explore temperature, CPU and RAM.`}>
+          const held = pinnedHealthCard === nodeName;
+          const toggle = () => { playSound('click'); setPinnedHealthCard(current => current === nodeName ? null : nodeName); };
+          return <article className={`health-card ${state} ${held ? 'health-card-held' : ''}`} key={nodeName} tabIndex={0} role="button" aria-pressed={held} onClick={toggle} onKeyDown={event => { if (event.target !== event.currentTarget || event.repeat) return; if (event.key === 'Escape') setPinnedHealthCard(null); if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); toggle(); } }} aria-label={`${nodeName} system health. Click, tap, Space or Enter to flip between live metrics and temperature, CPU and RAM history.`}>
             <div className="health-card-flip">
               <div className="health-face health-front" aria-hidden={held} inert={held}>
                 <div className="health-title"><div><span>{nodeName === 'nilavus' ? 'HP Laptop' : 'Storage PC'}</span><h3>{nodeName}</h3></div><b><i />{state}</b></div>
                 <div className="metric-grid"><div><span>Temperature</span><strong>{formatMetric(node?.temperatureC, '°C')}</strong></div><div><span>CPU activity</span><strong>{formatMetric(node?.cpuPercent)}</strong></div><div><span>Memory</span><strong>{formatMetric(node?.memoryPercent)}</strong></div><div><span>Storage</span><strong>{formatMetric(node?.diskPercent)}</strong></div><div><span>Load</span><strong>{node?.load?.[0]?.toFixed(2) ?? '—'}</strong></div><div><span>Uptime</span><strong>{formatUptime(node?.uptimeSeconds)}</strong></div></div>
-                <button type="button" className="health-history-open" onClick={() => setPinnedHealthCard(nodeName)}>History ↗</button>
               </div>
-              <div className="health-face health-back" aria-hidden={!held} inert={!held}><TemperatureGraph node={nodeName} active={held} selectable /><span>{nodeName === 'nilavus' ? 'DOSIMETER' : 'PENTIUM'}</span><button type="button" className="health-history-close" onClick={() => { setPinnedHealthCard(null); stopHealthHold(); }}>Back ↩</button></div>
+              <div className="health-face health-back" aria-hidden={!held} inert={!held}><div className="health-history-overview"><div className="health-history-heading">PAST 24 HOURS <small>10s REFRESH</small></div><div className="health-history-charts">{(['temperature', 'cpu', 'ram'] as const).map(metric => <TemperatureGraph key={metric} node={nodeName} active={held} initialMetric={metric} compact />)}</div></div><span>{nodeName === 'nilavus' ? 'DOSIMETER' : 'PENTIUM'}</span></div>
             </div>
           </article>;
         })}</div>
-        <section className={`drive-panel health-drive-panel storage-flip-card ${storageHeld || storagePinned ? 'storage-held' : ''}`} tabIndex={0}
-          onPointerDown={event => { if (!(event.target as HTMLElement).closest('button, select') && (event.pointerType !== 'mouse' || event.button === 0)) setStorageHeld(true); }}
-          onPointerUp={() => setStorageHeld(false)} onPointerCancel={() => setStorageHeld(false)} onPointerLeave={() => setStorageHeld(false)}
-          onKeyDown={event => { if (event.target !== event.currentTarget) return; if (event.key === 'Escape') { setStoragePinned(false); setStorageHeld(false); } if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); setStorageHeld(true); } }}
-          onKeyUp={event => { if (event.target === event.currentTarget && (event.key === ' ' || event.key === 'Enter')) setStorageHeld(false); }} onBlur={() => setStorageHeld(false)}
-          onContextMenu={event => event.preventDefault()} aria-label="Storage drive health. Hold pointer, Space or Enter to reveal disk usage history.">
+        <section className={`drive-panel health-drive-panel storage-flip-card ${storagePinned ? 'storage-held' : ''}`} tabIndex={0}
+          onClick={event => { if (!(event.target as Element).closest('select, option')) setStoragePinned(value => !value); }}
+          onKeyDown={event => { if (event.target !== event.currentTarget || event.repeat) return; if (event.key === 'Escape') setStoragePinned(false); if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); setStoragePinned(value => !value); } }}
+          aria-label="Storage drive health. Click, tap, Space or Enter to flip between capacity and history.">
           <div className="storage-flip-inner">
-          <div className="storage-front" aria-hidden={storageHeld || storagePinned} inert={storageHeld || storagePinned}>
+          <div className="storage-front" aria-hidden={storagePinned} inert={storagePinned}>
           <div className="drive-panel-heading"><span>STORAGE</span><small>LIVE CAPACITY</small></div>
           <div className="drive-grid">{driveDefinitions.map(definition => {
             const node = health?.nodes[definition.host];
@@ -551,9 +538,8 @@ export default function Home() {
               <div className="drive-bar" role="meter" aria-label={`${definition.name} capacity used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={used ?? undefined}><span style={{ width: `${used ?? 0}%` }} /></div>
             </article>;
           })}</div>
-          <button type="button" className="health-history-open" onClick={() => setStoragePinned(true)}>History ↗</button>
           </div>
-          <div className="storage-back" aria-hidden={!storageHeld && !storagePinned} inert={!storageHeld && !storagePinned}><TemperatureGraph initialMetric="disk" active={storageHeld || storagePinned} selectable storageOnly /><span>DATA / ARCHIVES / MEDIA</span><button type="button" className="health-history-close" onClick={() => { setStoragePinned(false); setStorageHeld(false); }}>Back ↩</button></div>
+          <div className="storage-back" aria-hidden={!storagePinned} inert={!storagePinned}><TemperatureGraph initialMetric="disk" active={storagePinned} selectable storageOnly /><span>DATA / ARCHIVES / MEDIA</span></div>
           </div>
         </section>
       </section>
