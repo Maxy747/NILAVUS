@@ -7,7 +7,8 @@ import { alerts, storageStatus, systemStatus, type MaxTelemetry } from './teleme
 
 export type CoreState = 'checking' | 'online' | 'offline';
 const HEALTH_EVERY_MS = 60_000; // /health never touches the model, so this is cheap
-const CLOSE_MS = 560; // the console stretching down into the M.A.X. button
+const CLOSE_MS = 480; // the console stretching down into the M.A.X. button
+const FAB_REVEAL_AT = 0.6; // ...which fades in underneath as the console lands (a crossfade, no gap)
 
 // Lines the dashboard card types out in turn: questions M.A.X. really answers from telemetry.
 const PROMPTS = [
@@ -64,6 +65,7 @@ type Props = { telemetry: MaxTelemetry; enabled: boolean; onSound?: (name: 'clic
 export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateChange }: Props) {
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [landing, setLanding] = useState(false); // the button is showing again while the console lands
   const closingRef = useRef(false);
   const opener = useRef<HTMLElement | null>(null);
   const fabRef = useRef<HTMLButtonElement | null>(null);
@@ -115,13 +117,21 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
     if (closingRef.current) return;
     onSound?.('back');
     const fab = fabRef.current;
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      setLanding(true);
+      fab?.animate([
+        { opacity: 0, scale: '1.28 .78' }, { opacity: 1, offset: .22 }, { scale: '.9 1.12', offset: .45 }, { scale: '1.04 .97', offset: .75 }, { opacity: 1, scale: '1 1' },
+      ], { duration: 420, easing: 'ease-out' });
+    };
     const finish = () => {
+      reveal();
       closingRef.current = false;
       setClosing(false);
+      setLanding(false);
       setOpen(false);
-      fab?.animate([
-        { scale: '1.28 .78' }, { scale: '.9 1.12', offset: .45 }, { scale: '1.04 .97', offset: .75 }, { scale: '1 1' },
-      ], { duration: 420, easing: 'ease-out' });
       opener.current?.focus?.(); // give focus back to whatever opened the console
     };
     const shell = document.querySelector<HTMLElement>('.max-overlay .max-shell');
@@ -137,14 +147,17 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
     // Keep the corners looking like the button's 8px radius once scaled down.
     const radius = `${8 / sx}px / ${8 / sy}px`;
     shell.getAnimations().forEach(animation => animation.cancel()); // stop the opening effect if still running
+    // Linear timeline with per-step easing, so the offsets are real times: the console stays solid
+    // until 80% and the button (revealed at 60%) is already fading in underneath it.
     shell.animate([
-      { transform: 'none', opacity: 1, filter: 'brightness(1)' },
+      { transform: 'none', opacity: 1, filter: 'brightness(1)', easing: 'cubic-bezier(.5,0,.6,1)' },
       // Stretch: narrow and tall as it starts pulling toward the corner...
-      { transform: `translate(${dx * 0.18}px, ${dy * 0.3}px) scale(.62, 1.06)`, opacity: 1, filter: 'brightness(1.15)', offset: .38 },
+      { transform: `translate(${dx * 0.18}px, ${dy * 0.3}px) scale(.62, 1.06)`, opacity: 1, filter: 'brightness(1.15)', offset: .38, easing: 'cubic-bezier(.4,0,.2,1)' },
       // ...then wide and squashed as it lands, before settling into the button.
-      { transform: `translate(${dx * 0.94}px, ${dy * 0.96}px) scale(${sx * 1.6}, ${sy * 0.55})`, opacity: 1, offset: .82 },
+      { transform: `translate(${dx * 0.94}px, ${dy * 0.96}px) scale(${sx * 1.6}, ${sy * 0.55})`, opacity: 1, offset: .8, easing: 'ease-out' },
       { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, opacity: 0, borderRadius: radius, filter: 'brightness(1.6)' },
-    ], { duration: CLOSE_MS, easing: 'cubic-bezier(.55,0,.25,1)', fill: 'forwards' }).finished.then(finish, finish);
+    ], { duration: CLOSE_MS, easing: 'linear', fill: 'forwards' }).finished.then(finish, finish);
+    window.setTimeout(reveal, CLOSE_MS * FAB_REVEAL_AT);
   }, [onSound]);
 
   useEffect(() => {
@@ -187,7 +200,7 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
     {createPortal(<>
       {open && <div className={closing ? 'max-closing' : undefined}><MaxConsole telemetry={telemetry} onClose={hide} /></div>}
       {/* Always in the page so the closing console can shrink into its exact spot; hidden while open. */}
-      <button type="button" ref={fabRef} className={`max-fab max-fab-${glow}${open ? ' max-fab-hidden' : ''}`} onClick={show}
+      <button type="button" ref={fabRef} className={`max-fab max-fab-${glow}${open && !landing ? ' max-fab-hidden' : ''}`} onClick={show}
         aria-hidden={open} tabIndex={open ? -1 : 0} aria-label={`Open M.A.X. console, ${coreLabel.toLowerCase()} (Ctrl+K)`}>
         <span className={`max-led ${led}`} aria-hidden="true" />M.A.X.
       </button>
