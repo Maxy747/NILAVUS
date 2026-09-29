@@ -66,29 +66,45 @@ function coverageSentence(temperature: History | null, resource: History | null,
     : `${first.name} went quiet for about ${duration(first.ms)} in total.`;
 }
 
+// The summary changes slowly, so it's worked out at most once an hour per device: the first
+// visit reads the history, later visits within the hour reuse the saved sentence (no downloads).
+const CACHE_KEY = 'max-day-summary-v1';
+const REFRESH_MS = 60 * 60_000;
+type Saved = { at: number; text: string };
+const loadSaved = (): Saved | null => { try { const s = JSON.parse(localStorage.getItem(CACHE_KEY) ?? 'null') as Saved | null; return s?.text ? s : null; } catch { return null; } };
+const save = (saved: Saved) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify(saved)); } catch { /* this device only */ } };
+
+async function compute(): Promise<string | null> {
+  const [temperature, resource] = await Promise.allSettled([readHistory('temperature'), readHistory('cpu')]);
+  const value = <T,>(r: PromiseSettledResult<T>) => r.status === 'fulfilled' ? r.value : null;
+  const t = value(temperature), r = value(resource);
+  if (!t && !r) return null;
+  const now = Date.now();
+  return [...NODES.map(name => nodeSentence(name, t, r, now)), coverageSentence(t, r, now)].join(' ');
+}
+
 export default function DaySummary() {
-  const [data, setData] = useState<{ temperature: History | null; resource: History | null } | null>(null);
+  const [saved, setSaved] = useState<Saved | null>(loadSaved);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let disposed = false;
+    let timer = 0;
     const update = async () => {
-      if (document.hidden) return;
-      const [temperature, resource] = await Promise.allSettled([readHistory('temperature'), readHistory('cpu')]);
+      const text = await compute().catch(() => null);
       if (disposed) return;
-      const value = <T,>(r: PromiseSettledResult<T>) => r.status === 'fulfilled' ? r.value : null;
-      if (temperature.status === 'rejected' && resource.status === 'rejected') { setFailed(true); return; }
-      setFailed(false);
-      setData({ temperature: value(temperature), resource: value(resource) });
+      if (!text) { setFailed(true); timer = window.setTimeout(update, 10 * 60_000); return; } // retry in 10 min
+      const next = { at: Date.now(), text };
+      save(next); setSaved(next); setFailed(false);
+      timer = window.setTimeout(update, REFRESH_MS);
     };
-    void update();
-    const timer = window.setInterval(update, 60_000);
-    return () => { disposed = true; window.clearInterval(timer); };
+    // Fresh enough? Wait until it's an hour old (if the page is still open by then).
+    const age = saved ? Date.now() - saved.at : Infinity;
+    if (age >= REFRESH_MS) void update(); else timer = window.setTimeout(update, REFRESH_MS - age);
+    return () => { disposed = true; window.clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per page load
   }, []);
 
-  const now = Date.now();
-  const text = failed ? 'History is unavailable right now.'
-    : !data ? 'Reading the past day…'
-    : [...NODES.map(name => nodeSentence(name, data.temperature, data.resource, now)), coverageSentence(data.temperature, data.resource, now)].join(' ');
+  const text = saved?.text ?? (failed ? 'History is unavailable right now.' : 'Reading the past day…');
   // A span, not a <p>: it sits inside the M.A.X. card's <button>.
   return <span className="day-summary"><b>Past 24 hours:</b> {text}</span>;
 }
