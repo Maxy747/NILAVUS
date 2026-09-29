@@ -17,6 +17,18 @@ try {
   }
 } catch { /* resizing is a nicety; browsers may refuse it */ }
 
+// In a narrow window the quick actions become one sideways-scrolling row, and a mouse wheel
+// only scrolls vertically: turn wheel turns over that row into horizontal scrolling.
+// Trackpads' sideways swipes (deltaX) keep working as they are.
+document.addEventListener('wheel', event => {
+  const row = (event.target as Element | null)?.closest?.('.max-quick');
+  if (!(row instanceof HTMLElement) || row.scrollWidth <= row.clientWidth) return;
+  if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+  const step = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 40 : event.deltaY;
+  row.scrollBy({ left: step });
+  event.preventDefault();
+}, { passive: false });
+
 function MaxApp() {
   const { health, statusLive } = useNodeStatus();
   const telemetry = useMemo(() => maxTelemetryFrom(health, statusLive), [health, statusLive]);
