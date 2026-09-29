@@ -1152,7 +1152,7 @@ body.about-active {
     radial-gradient(circle at 16% 72%, #174b6921 0, transparent 34%),
     #000;
   animation: about-reveal .85s cubic-bezier(.16,.8,.2,1) both;
-  scrollbar-color: #385079 #03050a;
+  scrollbar-color: #2d6fa8 #03050a;
 }
 
 .about-page::before {
@@ -1855,3 +1855,12 @@ body.about-active {
 
 /* Startup reveal (App.tsx): hidden until each element gets its turn to animate in. */
 [data-lift="pending"] { opacity: 0; }
+
+/* One blue scrollbar across the site: the page itself, the About page and anything else that
+   scrolls (the M.A.X. console uses the same colours in max.css). */
+html { scrollbar-width: thin; scrollbar-color: #2d6fa8 #07111e; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #07111e; }
+::-webkit-scrollbar-thumb { background: #2d6fa8; border-radius: 8px; border: 1px solid #0b1e33; }
+::-webkit-scrollbar-thumb:hover { background: #53b8ff; }
+::-webkit-scrollbar-corner { background: #07111e; }
