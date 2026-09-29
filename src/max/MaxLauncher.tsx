@@ -168,6 +168,9 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
 
   if (!enabled) return null;
   const led = core; // online = green, offline = red, checking = blue pulse
+  // The button's glow combines M.A.X. and the system: worst of core reachability and both statuses.
+  const glow = core === 'offline' || status === 'CRITICAL' || storage === 'CRITICAL' ? 'bad'
+    : core === 'checking' ? 'checking' : status === 'WARNING' || storage === 'WARNING' ? 'warn' : 'ok';
   const coreLabel = core === 'online' ? 'ONLINE' : core === 'offline' ? 'OFFLINE' : 'CONNECTING';
 
   return <>
@@ -184,7 +187,7 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
     {createPortal(<>
       {open && <div className={closing ? 'max-closing' : undefined}><MaxConsole telemetry={telemetry} onClose={hide} /></div>}
       {/* Always in the page so the closing console can shrink into its exact spot; hidden while open. */}
-      <button type="button" ref={fabRef} className={`max-fab${open ? ' max-fab-hidden' : ''}`} onClick={show}
+      <button type="button" ref={fabRef} className={`max-fab max-fab-${glow}${open ? ' max-fab-hidden' : ''}`} onClick={show}
         aria-hidden={open} tabIndex={open ? -1 : 0} aria-label={`Open M.A.X. console, ${coreLabel.toLowerCase()} (Ctrl+K)`}>
         <span className={`max-led ${led}`} aria-hidden="true" />M.A.X.
       </button>

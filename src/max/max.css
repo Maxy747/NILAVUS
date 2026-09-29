@@ -77,6 +77,17 @@
 }
 
 .max-fab:focus-visible { outline: 2px solid var(--ps-cyan); outline-offset: 2px; }
+/* Glow = status of M.A.X. and the system (MaxLauncher): green normal, amber warning, red
+   critical or M.A.X. offline, blue pulse while connecting. */
+.max-fab { --fab-glow: var(--ps-cyan); border-color: color-mix(in srgb, var(--fab-glow) 45%, transparent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35), 0 0 18px color-mix(in srgb, var(--fab-glow) 32%, transparent);
+  transition: border-color .4s, box-shadow .4s; }
+.max-fab-ok { --fab-glow: var(--max-ok); }
+.max-fab-warn { --fab-glow: var(--max-warn); }
+.max-fab-bad { --fab-glow: var(--max-bad); }
+.max-fab-checking { --fab-glow: #4aa8ff; animation: max-fab-pulse 1.8s ease-in-out infinite; }
+@keyframes max-fab-pulse { 50% { box-shadow: 0 8px 24px rgba(0, 0, 0, .35), 0 0 6px color-mix(in srgb, var(--fab-glow) 20%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .max-fab-checking { animation: none; } }
 
 /* ---------- status LEDs ---------- */
 .max-led {
