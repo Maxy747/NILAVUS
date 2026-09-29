@@ -42,8 +42,11 @@
 .max-teaser-line { display: inline-flex; align-items: center; gap: 8px; color: var(--max-dim); font-size: 11px; letter-spacing: .12em; }
 .max-teaser-prompt { font-size: 15px; }
 /* The past day in a sentence or two, between the status line and the prompt (DaySummary.tsx). */
-.day-summary { display: block; color: var(--max-dim); font-size: 12px; line-height: 1.55; letter-spacing: .02em; text-wrap: pretty; }
+.day-summary { display: block; overflow: hidden; color: var(--max-dim); font-size: 12px; line-height: 1.55; letter-spacing: .02em; text-wrap: pretty;
+  transition: height .28s cubic-bezier(.2,.8,.2,1); } /* grows and shrinks with the typed text */
+.day-summary-text { display: block; }
 .day-summary b { color: var(--ps-cyan); font-weight: 600; letter-spacing: .06em; }
+.day-summary-cursor { color: var(--ps-cyan); animation: max-blink 1s steps(1) infinite; }
 
 .max-teaser-card kbd {
   position: absolute;

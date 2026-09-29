@@ -1,6 +1,6 @@
 // One line on the M.A.X. card: the past day in a sentence or two, from the saved history (the
 // same data and cache as the graphs). Nothing is estimated beyond the saved readings.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { readHistory, type History, type Sample } from '../TemperatureGraph';
 import { TEMP_WARN } from './telemetry';
 
@@ -102,7 +102,50 @@ export default function DaySummary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per page load
   }, []);
 
-  const text = saved?.text ?? (failed ? 'History is unavailable right now.' : 'Reading the past day…');
+  // Typed in once, the first time the card is on screen (after its open effect). The card grows
+  // with the text (and shrinks if it gets shorter): the outer span animates to the text's height.
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const textRef = useRef<HTMLSpanElement | null>(null);
+  const [height, setHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+    const measure = () => setHeight(el.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const [visible, setVisible] = useState(false);
+  const [typed, setTyped] = useState(0);
+  const [typingDone, setTypingDone] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  useEffect(() => {
+    const el = ref.current;
+    if (typingDone || !el || !('IntersectionObserver' in window)) { setVisible(true); return; }
+    let timer = 0;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
+      observer.disconnect();
+      timer = window.setTimeout(() => setVisible(true), 700);
+    });
+    observer.observe(el);
+    return () => { observer.disconnect(); window.clearTimeout(timer); };
+  }, [typingDone]);
+  const full = saved?.text;
+  useEffect(() => {
+    if (typingDone || !visible || !full) return;
+    if (typed >= full.length) { setTypingDone(true); return; }
+    const timer = window.setTimeout(() => setTyped(n => Math.min(full.length, n + 2)), 24); // ~12 ms per character
+    return () => window.clearTimeout(timer);
+  }, [typingDone, visible, full, typed]);
+
+  const placeholder = failed ? 'History is unavailable right now.' : 'Reading the past day…';
   // A span, not a <p>: it sits inside the M.A.X. card's <button>.
-  return <span className="day-summary"><b>Past 24 hours:</b> {text}</span>;
+  return <span className="day-summary" ref={ref} aria-label={`Past 24 hours: ${full ?? placeholder}`}
+    style={height == null ? undefined : { height }}>
+    <span className="day-summary-text" ref={textRef} aria-hidden="true">
+      <b>Past 24 hours:</b>{' '}
+      {!full ? placeholder : typingDone ? full : <>{full.slice(0, typed)}<span className="day-summary-cursor">_</span></>}
+    </span>
+  </span>;
 }
