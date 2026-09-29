@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchHealth } from './api';
 import MaxConsole from './MaxConsole';
+import DaySummary from './DaySummary';
 import { alerts, storageStatus, systemStatus, type MaxTelemetry } from './telemetry';
 
 export type CoreState = 'checking' | 'online' | 'offline';
@@ -24,20 +25,37 @@ function TypedPrompt() {
   const [index, setIndex] = useState(0);
   const [length, setLength] = useState(PROMPTS[0].length); // the first line starts fully typed
   const [erasing, setErasing] = useState(false);
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLSpanElement | null>(null);
   const line = PROMPTS[index];
+  // Start the cycle only once the card is on screen (after its open animation), so the greeting
+  // really is visible for its full hold instead of timing out while scrolled away or hidden.
   useEffect(() => {
+    const el = ref.current;
+    if (!el || !('IntersectionObserver' in window)) { setStarted(true); return; }
+    let timer = 0;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
+      observer.disconnect();
+      timer = window.setTimeout(() => setStarted(true), 700);
+    });
+    observer.observe(el);
+    return () => { observer.disconnect(); window.clearTimeout(timer); };
+  }, []);
+  useEffect(() => {
+    if (!started) return;
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let delay: number, step: () => void;
     if (still) { // no typing: just swap the whole line every few seconds
       delay = 4000; step = () => { const next = (index + 1) % PROMPTS.length; setIndex(next); setLength(PROMPTS[next].length); };
     } else if (!erasing && length < line.length) { delay = 45; step = () => setLength(n => n + 1); }
-    else if (!erasing) { delay = 2800; step = () => setErasing(true); }
+    else if (!erasing) { delay = index === 0 ? 5000 : 2800; step = () => setErasing(true); } // the greeting stays longer
     else if (length > 0) { delay = 20; step = () => setLength(n => n - 1); }
     else { delay = 350; step = () => { setErasing(false); setIndex(i => (i + 1) % PROMPTS.length); }; }
     const timer = window.setTimeout(step, delay);
     return () => window.clearTimeout(timer);
-  }, [index, length, erasing, line.length]);
-  return <span className="max-teaser-prompt" aria-hidden="true">&gt; {line.slice(0, length)}<span className="max-cursor">_</span></span>;
+  }, [started, index, length, erasing, line.length]);
+  return <span ref={ref} className="max-teaser-prompt" aria-hidden="true">&gt; {line.slice(0, length)}<span className="max-cursor">_</span></span>;
 }
 
 type Props = { telemetry: MaxTelemetry; enabled: boolean; onSound?: (name: 'click' | 'back') => void; onCoreStateChange?: (state: CoreState) => void };
@@ -133,6 +151,7 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
       <div className="section-heading"><span>M.A.X.</span><b>Machine-Assisted eXecutive</b></div>
       <button type="button" className="max-teaser-card" onClick={show} aria-label={`Open M.A.X. console. M.A.X. ${coreLabel.toLowerCase()}, system status ${status.toLowerCase()}, storage status ${storage.toLowerCase()}.`}>
         <span className="max-teaser-line"><span className={`max-led ${led}`} aria-hidden="true" />M.A.X. {coreLabel} · SYSTEM STATUS: {status} · STORAGE STATUS: {storage}</span>
+        <DaySummary />
         <TypedPrompt />
         <kbd>CTRL+K</kbd>
       </button>

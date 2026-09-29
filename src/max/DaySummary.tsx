@@ -1,7 +1,7 @@
-// One line above System Health: what the last 24 hours looked like, from the saved history
+// One line on the M.A.X. card: what the last 24 hours looked like, from the saved history
 // (the same data and cache as the graphs). Nothing is estimated beyond the saved readings.
 import { useEffect, useState } from 'react';
-import { readHistory, type History, type Sample } from './TemperatureGraph';
+import { readHistory, type History, type Sample } from '../TemperatureGraph';
 
 const DAY_MS = 86_400_000;
 const GAP_MS = 180_000; // same rule as the graphs: a gap over 3 minutes means no readings
@@ -55,10 +55,11 @@ export default function DaySummary() {
   }, []);
 
   const now = Date.now();
-  return <p className="day-summary" aria-live="off">
+  // A span, not a <p>: it sits inside the M.A.X. card's <button>.
+  return <span className="day-summary">
     <b>LAST 24 H</b>
     {failed ? <span>History unavailable</span>
       : !data ? <span>Reading history…</span>
       : NODES.map(name => <span key={name}><em>{name}</em> {summary(name, data.temperature, data.resource, now)}</span>)}
-  </p>;
+  </span>;
 }

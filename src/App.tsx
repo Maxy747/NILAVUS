@@ -4,7 +4,6 @@ import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import MaxLauncher, { type CoreState } from './max/MaxLauncher';
 import TemperatureGraph from './TemperatureGraph';
-import DaySummary from './DaySummary';
 import { functionsUrl, maxTelemetryFrom, services, useNodeStatus, type NodeName } from './status';
 
 type ConnectionMode = 'lan' | 'remote';
@@ -156,7 +155,7 @@ export default function Home() {
   // The pending flag is a data attribute because React rewrites className on status refreshes.
   useEffect(() => {
     if (!gatewayOpen || !('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const cards = [...document.querySelectorAll<HTMLElement>('.node-statuses .status, .connection-panel, .service-card, .max-teaser-card, .day-summary, .health-card, .drive-item')];
+    const cards = [...document.querySelectorAll<HTMLElement>('.node-statuses .status, .connection-panel, .service-card, .max-teaser-card, .health-card, .drive-item')];
     let nextSlot = performance.now() + 350; // let the page's own reveal get going first
     const lift = (card: HTMLElement) => {
       const now = performance.now();
@@ -559,7 +558,6 @@ export default function Home() {
 
       <section className="health" aria-label="System health">
         <div className="section-heading"><span>System health</span><b>Refreshes every 10 seconds</b></div>
-        <DaySummary />
         <div className="health-grid">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => {
           const node = health?.nodes[nodeName];
           const state = node?.online ? 'online' : health ? 'offline' : 'checking';

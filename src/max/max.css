@@ -41,6 +41,12 @@
 
 .max-teaser-line { display: inline-flex; align-items: center; gap: 8px; color: var(--max-dim); font-size: 11px; letter-spacing: .12em; }
 .max-teaser-prompt { font-size: 15px; }
+/* Last 24 hours, one line between the status line and the prompt (DaySummary.tsx). */
+.day-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; color: var(--max-dim); font-size: 11px; letter-spacing: .04em; }
+.day-summary b { color: var(--ps-cyan); font-weight: 600; letter-spacing: .14em; }
+.day-summary em { color: var(--max-text); font-style: normal; }
+.day-summary span + span { padding-left: 16px; border-left: 1px solid var(--max-line); }
+@media (max-width: 760px) { .day-summary span + span { padding-left: 0; border-left: 0; } .day-summary span { flex-basis: 100%; } }
 
 .max-teaser-card kbd {
   position: absolute;
