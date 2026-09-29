@@ -94,14 +94,19 @@ export const overallStatus = (t: MaxTelemetry, list = alerts(t)): SystemStatus =
   return RANK[a] >= RANK[b] ? a : b;
 };
 
-/** Opening lines, written by code from real telemetry, so opening the console costs no inference. */
-export function greeting(t: MaxTelemetry, now = new Date()): string {
+/**
+ * Opening lines, written by code from real telemetry, so opening the console costs no inference.
+ * They say where the facts come from, and whether the AI itself can answer right now.
+ */
+export function greeting(t: MaxTelemetry, now = new Date(), aiOffline = false): string {
   const hour = now.getHours();
   const hello = hour < 5 ? 'Still up, Max?' : hour < 12 ? 'Good morning, Max.' : hour < 18 ? 'Good afternoon, Max.' : 'Good evening, Max.';
-  if (!t.live) return `${hello}\n\nTelemetry is unavailable, so I can't see the servers right now.`;
+  const ai = aiOffline ? "\n\nThe AI core is offline, so I can't answer questions right now. These lines come straight from telemetry." : '';
+  if (!t.live) return `${hello}\n\nTelemetry is unavailable, so I can't see the servers right now.${ai}`;
   const list = alerts(t);
   const down = t.services.filter(s => !serviceUp(t, s));
-  const lines = [hello, ''];
+  const at = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const lines = [hello, '', `Live telemetry at ${at}:`];
   lines.push(down.length ? `${down.length} service${down.length === 1 ? '' : 's'} offline: ${down.map(s => s.name).join(', ')}.`
     : 'All monitored services are operational.');
   // Name every active alert (critical first) instead of pointing at them.
@@ -109,8 +114,8 @@ export function greeting(t: MaxTelemetry, now = new Date()): string {
   for (const alert of ordered.filter(a => !(a.category === 'system' && a.message.endsWith('is offline.')))) {
     lines.push(`${alert.level === 'critical' ? 'CRITICAL' : 'Warning'}: ${alert.message}`);
   }
-  lines.push(list.some(a => a.level === 'critical') ? 'Needs attention.' : list.length ? 'Nothing critical detected.' : 'No alerts. System check complete.');
-  return lines.join('\n');
+  lines.push(list.some(a => a.level === 'critical') ? 'Needs attention.' : list.length ? 'Nothing critical.' : 'No active alerts.');
+  return lines.join('\n') + ai;
 }
 
 /** Stable identity of an alert, so M.A.X. announces it once, and again only if it escalates. */

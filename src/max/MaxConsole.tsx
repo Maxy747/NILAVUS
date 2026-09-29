@@ -114,6 +114,8 @@ const linkify = (text: string): ReactNode[] => text.split(/(https?:\/\/[^\s)]+)/
 
 export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelemetry; onClose: () => void }) {
   const [core, setCore] = useState<Core>({ state: 'checking' });
+  const coreRef = useRef(core);
+  coreRef.current = core;
   const [log, setLog] = useState<Entry[]>(loadLog);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -191,7 +193,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     const added: Entry[] = [];
     if (logLength.current === 0) {
       // First open: the greeting already names every active alert.
-      added.push({ id: nextId.current++, kind: 'max', text: greeting(telemetry), time: clock() });
+      added.push({ id: nextId.current++, kind: 'max', text: greeting(telemetry, new Date(), coreRef.current.state === 'offline'), time: clock() });
     } else {
       for (const alert of alertList) {
         if (!known.includes(alertKey(alert))) added.push({ id: nextId.current++, kind: 'alert', level: alert.level, text: alert.message, time: clock() });
@@ -366,7 +368,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     setSession(fresh);
     saveSession(fresh);
     setLog([{ id: nextId.current++, kind: 'system', text: daily ? 'Daily reset · 06:00 IST. Previous conversation saved in HISTORY.' : saved ? 'New conversation. The previous one is in HISTORY.' : 'Conversation cleared.', time: clock() },
-      { id: nextId.current++, kind: 'max', text: greeting(t), time: clock() }]);
+      { id: nextId.current++, kind: 'max', text: greeting(t, new Date(), core.state === 'offline'), time: clock() }]);
   };
 
   const rolloverRef = useRef(() => {});
