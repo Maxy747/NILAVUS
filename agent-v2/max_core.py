@@ -37,6 +37,7 @@ import math
 import max_docker
 import max_services
 import max_daily
+import max_procs
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HOME = os.path.expanduser("~")
@@ -219,23 +220,22 @@ TEMP_WORDS = {"hot", "hotter", "temp", "temperature", "heat", "warm", "warmer", 
 UPTIME_WORDS = {"uptime", "reboot", "rebooted", "restart", "restarted"}
 DRIVE_WORDS = {"full", "space", "storage", "disk", "drive", "drives", "bookussy", "wd", "capacity", "free", "left"}
 LOAD_WORDS = {"cpu", "memory", "ram", "load", "slow", "resources", "busy", "usage"}
+# "What's hogging the CPU?", "which process is eating memory?": per-app usage (max_procs).
+PROC_WORDS = {"process", "processes", "hogging", "eating", "consuming", "heaviest", "culprit", "apps"}
 ALERT_WORDS = {"alert", "alerts", "warning", "warnings", "problem", "problems", "issue", "issues", "wrong"}
 UNMONITORED = {  # word -> honest answer until the integration exists
-    "process": "Per-process usage isn't tracked by NILAVUS yet, only totals per machine.",
-    "processes": "Per-process usage isn't tracked by NILAVUS yet, only totals per machine.",
     "yesterday": "NILAVUS doesn't keep telemetry history yet, so it can't compare with earlier.",
     "changed": "NILAVUS doesn't keep telemetry history yet, so it can't compare with earlier.",
     "backup": "Backups aren't monitored by NILAVUS yet.",
     "backups": "Backups aren't monitored by NILAVUS yet.",
 }
-SERVER_TOPIC = (STATUS_WORDS | TEMP_WORDS | UPTIME_WORDS | DRIVE_WORDS | LOAD_WORDS | ALERT_WORDS
+SERVER_TOPIC = (STATUS_WORDS | TEMP_WORDS | UPTIME_WORDS | DRIVE_WORDS | LOAD_WORDS | ALERT_WORDS | PROC_WORDS
                 | set(APP_ALIASES) | set(UNMONITORED)
                 | {"docker", "container", "containers", "server", "servers", "nas", "nasig", "laptop", "dosimeter", "nilavus", "running", "network", "services"})
 NEGATIVE = re.compile(r"\b(not|isn't|isnt|down|unavailable|offline)\b")
 # Word an honest "not monitored" answer must contain.
 UNMONITORED_KEY = {text: key for text, key in [
     ("Docker/container status isn't monitored by NILAVUS yet.", "monitor"),
-    ("Per-process usage isn't tracked by NILAVUS yet, only totals per machine.", "process"),
     ("NILAVUS doesn't keep telemetry history yet, so it can't compare with earlier.", "history"),
     ("Backups aren't monitored by NILAVUS yet.", "monitor"),
 ]}
@@ -359,6 +359,15 @@ def build_facts(question, ctx, action=None):
             check(lambda a, link=s["link"]: link in a)
         rows.append((s["name"].upper(), "ONLINE" if s["online"] else "OFFLINE"))
 
+    def add_apps(name, brief=False):
+        """Which apps are using this machine (max_procs), with a check that the answer names the busiest."""
+        app_facts, app_rows, top = max_procs.describe(name, FRIENDLY[name], brief)
+        for i, fact in enumerate(app_facts):
+            facts.append(fact)
+            if i == 0 and top:
+                check(lambda a, t=top.split(" (")[0].lower(): t in a.lower())
+        rows.extend(app_rows)
+
     def add_overview():
         if not add("overview"):
             return
@@ -378,6 +387,9 @@ def build_facts(question, ctx, action=None):
         for name, node in nodes.items():
             rows.extend(node_rows(name, node, full=False))
         rows.extend((a["level"].upper(), a["message"]) for a in ctx["alerts"])
+        for name, node in nodes.items():
+            if node["online"]:
+                add_apps(name, brief=True)
 
     if action == "status" or (not app_keys and words & STATUS_WORDS and not words & {"nas", "nasig", "laptop", "dosimeter"}):
         add_overview()
@@ -393,6 +405,7 @@ def build_facts(question, ctx, action=None):
             facts.append(f"{cap(FRIENDLY[name])} is online: CPU {pct(node['cpuPercent'])}, memory {pct(node['memoryPercent'])}, "
                          f"load {node['load1']}, uptime {node['uptime']}.")
             rows += node_rows(name, node)
+            add_apps(name)
             # "Is NASig okay?" must mention its own drive problems, not just CPU and memory.
             # (The NAS quick action lists every drive in the storage section instead.)
             for d in ([] if machine_action else ctx["storage"]):
@@ -402,14 +415,12 @@ def build_facts(question, ctx, action=None):
                     check(denies_problems, contradiction=True)
                     rows.append((d["name"].upper(), f"{d['usedPercent']:.0f}%  {d['level'].upper()}"))
 
-    if (words & LOAD_WORDS) and not per_node and add("load"):
+    if (words & (LOAD_WORDS | PROC_WORDS)) and not per_node and add("load"):
         for name, node in nodes.items():
             if node["online"]:
                 facts.append(f"{cap(FRIENDLY[name])}: CPU {pct(node['cpuPercent'])}, memory {pct(node['memoryPercent'])}, load {node['load1']}.")
                 rows += node_rows(name, node, full=False)[:2] + [(f"{LABEL[name]} LOAD", str(node["load1"]))]
-        if words & {"slow", "resources"}:
-            facts.append("Per-process usage isn't tracked yet, so M.A.X. can only see totals per machine.")
-            check(lambda a: "process" in a.lower())
+                add_apps(name)
 
     if words & TEMP_WORDS:
         temps = {n: node["temperatureC"] for n, node in nodes.items() if node["online"] and node.get("temperatureC") is not None}
@@ -1067,6 +1078,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, exit_on_sigterm)
     threading.Thread(target=reap_idle, daemon=True).start()
     threading.Thread(target=max_daily.run_forever, name="daily-report", daemon=True).start()
+    threading.Thread(target=max_procs.run_forever, name="process-history", daemon=True).start()
     print(f"M.A.X. core on 127.0.0.1:{PORT} | provider={AI.name} model={AI.model}", flush=True)
     try:
         ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

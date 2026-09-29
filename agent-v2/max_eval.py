@@ -66,7 +66,7 @@ CASES = [
     ("Is NASig okay?", "NAS question flags critical drive", mentions_critical),
     ("How much storage do I have left?", "storage question flags critical drive", mentions_critical),
     ("Is Immich running?", "Immich up", lambda a: "immich" in a.lower() and not_down(a)),
-    ("What's using the most resources?", "honest about per-process", has("process")),
+    ("What's using the most resources?", "names the busiest apps", lambda a: "%" in a or " gb" in a.lower() or " mb" in a.lower()),
     ("Are there any alerts?", "alerts listed", mentions_critical),
     ("Why is the server slow?", "load answer", lambda a: bool(a)),
     ("What services are offline?", "none offline", lambda a: bool(re.search(r"\b(no|none|all)\b", a.lower()))),

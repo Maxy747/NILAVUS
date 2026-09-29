@@ -56,6 +56,8 @@ install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_core.py" "$LLM_DIR/max_c
 install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_docker.py" "$LLM_DIR/max_docker.py"
 install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_services.py" "$LLM_DIR/max_services.py"
 install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_daily.py" "$LLM_DIR/max_daily.py"
+install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_procs.py" "$LLM_DIR/max_procs.py"
+install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/nilavus_top.py" "$LLM_DIR/nilavus_top.py"
 install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_eval.py" "$LLM_DIR/max_eval.py"
 install -m 0644 "$SRC/nilavu-max.service" /etc/systemd/system/nilavu-max.service
 
