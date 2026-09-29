@@ -11,3 +11,17 @@ html, body { height: 100%; margin: 0; background: #050b16; }
 
 .max-overlay { padding: 0; background: #050b16; backdrop-filter: none; animation: none; }
 .max-shell { width: 100%; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+
+/* Window Controls Overlay (installed app, title bar hidden): the M.A.X. header becomes the
+   title bar. Drag the window by it; keep clear of the minimise/maximise/close buttons. */
+@media (display-mode: window-controls-overlay) {
+  .max-header {
+    min-height: env(titlebar-area-height, 33px);
+    padding-left: max(12px, env(titlebar-area-x, 0px));
+    padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 8px);
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+  .max-header button,
+  .max-header a { -webkit-app-region: no-drag; app-region: no-drag; }
+}
