@@ -67,6 +67,7 @@ export default function Home() {
   const [gatewayLeaving, setGatewayLeaving] = useState(false);
   const [gatewayOpen, setGatewayOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [maxCommandsShown, setMaxCommandsShown] = useState(false);
   const [aboutLeaving, setAboutLeaving] = useState(false);
   const [modeAnimating, setModeAnimating] = useState(false);
   const [pinnedHealthCard, setPinnedHealthCard] = useState<NodeName | null>(null);
@@ -466,21 +467,39 @@ export default function Home() {
         <div className="about-rule" />
         <div className="about-spec built-spec"><h3>Built from:</h3><p>Linux · Docker · OpenMediaVault<br />Tailscale · Jellyfin · Immich<br />Kavita · Navidrome</p></div>
         <div className="about-spec hardware-spec"><h3>Hardware:</h3><p>More ambition than hardware.</p></div>
-        <section className="about-max" aria-labelledby="about-max-title">
-          <span className="about-kicker">NEW ADDITION</span>
-          <h3 id="about-max-title">Meet M.A.X.</h3>
-          <p>Machine-Assisted eXecutive. Your home cloud, in conversation.</p>
-          <p>A locally hosted assistant on Dosimeter, bringing service status, storage and saved temperature history into one console. Ask what’s running, check a spike, or find your apps—without leaving NILAVUS.</p>
-          <dl className="about-max-spec" aria-label="M.A.X. technical details">
-            <dt>Model</dt><dd>Llama 3.2 3B Instruct · Q4_K_M GGUF (~2 GB), checksum-verified</dd>
-            <dt>Runtime</dt><dd>llama.cpp on Dosimeter’s CPU · 2 threads · 4K context · no GPU, no cloud</dd>
-            <dt>Footprint</dt><dd>Loads on the first question, unloads after 10 idle minutes · capped at 2 cores and 4 GB, low priority so Immich and Jellyfin come first</dd>
-            <dt>Method</dt><dd>Code reads the telemetry and works out the facts; the model only phrases them. Every answer is checked against live data and corrected if it’s wrong</dd>
-            <dt>Speed</dt><dd>Streams word by word · first words in ~4–17 s · prompt cache reuses repeated context</dd>
-            <dt>Tested</dt><dd>17/17 on a graded eval of real questions against live telemetry</dd>
-            <dt>Access</dt><dd>Public through Tailscale Funnel at /ai · rate-limited per visitor · chat log stays on Dosimeter</dd>
-          </dl>
-          <small>Live telemetry · History graphs · Daily chat archive</small>
+        {/* Flip card: the front introduces M.A.X., the back lists what you can say. Both faces share
+            one grid cell, so the card is always as tall as the taller face and nothing overflows. */}
+        <section className={`about-max ${maxCommandsShown ? 'about-max-flipped' : ''}`} aria-labelledby="about-max-title"
+          onClick={() => setMaxCommandsShown(shown => !shown)}>
+          <div className="about-max-face about-max-front" aria-hidden={maxCommandsShown}>
+            <span className="about-kicker">NEW ADDITION</span>
+            <h3 id="about-max-title">Meet M.A.X.</h3>
+            <p>Machine-Assisted eXecutive. Your home cloud, in conversation.</p>
+            <p>A locally hosted assistant on Dosimeter, bringing service status, storage and saved temperature history into one console. Ask what’s running, check a spike, or find your apps—without leaving NILAVUS.</p>
+            <dl className="about-max-spec" aria-label="M.A.X. technical details">
+              <dt>Model</dt><dd>Llama 3.2 3B Instruct · Q4_K_M GGUF (~2 GB), checksum-verified</dd>
+              <dt>Runtime</dt><dd>llama.cpp on Dosimeter’s CPU · 2 threads · 4K context · no GPU, no cloud</dd>
+              <dt>Footprint</dt><dd>Loads on the first question, unloads after 10 idle minutes · capped at 2 cores and 4 GB, low priority so Immich and Jellyfin come first</dd>
+              <dt>Method</dt><dd>Code reads the telemetry and works out the facts; the model only phrases them. Every answer is checked against live data and corrected if it’s wrong</dd>
+              <dt>Speed</dt><dd>Streams word by word · first words in ~4–17 s · prompt cache reuses repeated context</dd>
+              <dt>Tested</dt><dd>17/17 on a graded eval of real questions against live telemetry</dd>
+              <dt>Access</dt><dd>Public through Tailscale Funnel at /ai · rate-limited per visitor · chat log stays on Dosimeter</dd>
+            </dl>
+            <small>Live telemetry · History graphs · Daily chat archive</small>
+            <button type="button" className="about-max-tap" aria-expanded={maxCommandsShown} tabIndex={maxCommandsShown ? -1 : 0}>TAP TO SHOW COMMANDS ▸</button>
+          </div>
+          <div className="about-max-face about-max-back" aria-hidden={!maxCommandsShown}>
+            <span className="about-kicker">M.A.X. COMMANDS</span>
+            <dl className="about-max-commands">
+              <dt>Buttons</dt><dd>System status · Alerts · Graphs · Check Dosimeter · Check NAS · Services · App links · Storage · Temperatures · Resources · Uptime · Network · Docker</dd>
+              <dt>Ask</dt><dd>“Is everything ok?” · “What’s down?” · “Which is hotter?” · “How full is Bookussy?” · “Is Immich up?” · “Why is it slow?” · “Any alerts?” · “When did it last reboot?” · “Link to music”</dd>
+              <dt>Show</dt><dd>“Show graphs” · “CPU graph” · “RAM chart” · “Disk graph” · “SMART hours graph”: saved 24 h history, works even offline</dd>
+              <dt>Do</dt><dd>“Restart Jellyfin” · “Start Kavita” · “Turn on qBittorrent” · “Start PC workers”: owner on Tailscale only, asks before restarting, never stops anything</dd>
+              <dt>Keys</dt><dd>Ctrl+K or / opens M.A.X. · Esc closes · Enter sends · CLR saves the chat and starts a new one · HISTORY shows past chats</dd>
+              <dt>Daily</dt><dd>A report of each day just after midnight · anything down for over an hour is restarted automatically</dd>
+            </dl>
+            <button type="button" className="about-max-tap" tabIndex={maxCommandsShown ? 0 : -1}>◂ TAP TO GO BACK</button>
+          </div>
         </section>
         <div className="about-spec developers-spec"><h3>Developers:</h3><p>Max &amp; Mar</p></div>
         <div className="about-rule" />
