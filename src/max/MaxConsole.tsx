@@ -1,14 +1,35 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { fetchHealth, fetchHistory, MAX_URL, streamChat, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
+import { controlService, fetchDaily, fetchServices, type AppKey, fetchDocker, startDockerWorkers, fetchHealth, fetchHistory, MAX_URL, streamChat, type DockerStatus, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
 import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, nodesReporting, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
 import './max.css';
-import TemperatureGraph from '../TemperatureGraph';
+import TemperatureGraph, { type Metric } from '../TemperatureGraph';
 import { chatExpired } from './chatDay';
 
 type Entry = {
   id: number; kind: 'max' | 'user' | 'alert' | 'system'; text: string; time: string;
   rows?: Row[]; pending?: boolean; corrected?: boolean; seconds?: number; error?: boolean; level?: 'critical' | 'warning';
+  graph?: Metric; // a live history graph with its picker, opened on this metric
 };
+
+// "restart jellyfin", "start immich", "turn on the music"... Fixed apps and verbs only (no stop).
+const APP_WORDS: [RegExp, AppKey][] = [
+  [/\b(jellyfin|movies?|tv)\b/i, 'jellyfin'], [/\b(immich|photos?)\b/i, 'immich'], [/\b(kavita|books?|comics?)\b/i, 'kavita'],
+  [/\b(navidrome|music)\b/i, 'navidrome'], [/\b(qbittorrent|qbit|torrents?|downloads?)\b/i, 'qbit'],
+];
+const CONTROL_VERB = /\b(restart|reboot|start|turn on|bring up|boot)\b/i;
+const controlRequest = (text: string): { app: AppKey; verb: 'start' | 'restart' } | null => {
+  const verb = text.match(CONTROL_VERB)?.[1]?.toLowerCase();
+  const app = APP_WORDS.find(([pattern]) => pattern.test(text))?.[1];
+  if (!verb || !app || /\b(stop|kill|shut ?down|disable)\b/i.test(text)) return null;
+  return { app, verb: verb === 'restart' || verb === 'reboot' ? 'restart' : 'start' };
+};
+
+// "show graphs", "cpu graph", "temperature chart"... answered locally from the saved history:
+// no model, and it works while the AI core is offline.
+const GRAPH_REQUEST = /\b(graphs?|charts?|plots?)\b/i;
+const graphMetric = (text: string): Metric =>
+  /\b(cpu|processor)\b/i.test(text) ? 'cpu' : /\b(ram|memory)\b/i.test(text) ? 'ram'
+    : /\b(smart|power.?on|hours)\b/i.test(text) ? 'smart' : /\b(disk|storage|drive|space)\b/i.test(text) ? 'disk' : 'temperature';
 type Core = { state: 'checking' } | { state: 'online'; health: CoreHealth } | { state: 'offline' };
 
 const LOG_KEY = 'max-log-v1';
@@ -16,8 +37,10 @@ const ANNOUNCED_KEY = 'max-announced-v1';
 const loadAnnounced = (): string[] => { try { return JSON.parse(localStorage.getItem(ANNOUNCED_KEY) ?? '[]') as string[]; } catch { return []; } };
 const saveAnnounced = (keys: string[]) => { try { localStorage.setItem(ANNOUNCED_KEY, JSON.stringify(keys)); } catch { /* this device only */ } };
 const BOOT_KEY = 'max-booted';
-const QUICK: { action: QuickAction; label: string }[] = [
+const DAILY_KEY = 'max-daily-shown-v1';
+const QUICK: { action: QuickAction | 'graphs'; label: string }[] = [
   { action: 'status', label: 'SYSTEM STATUS' }, { action: 'alerts', label: 'ALERTS' },
+  { action: 'graphs', label: 'GRAPHS' },
   { action: 'dosimeter', label: 'CHECK DOSIMETER' }, { action: 'nas', label: 'CHECK NAS' },
   { action: 'services', label: 'CHECK SERVICES' }, { action: 'links', label: 'APP LINKS' },
   { action: 'storage', label: 'STORAGE' }, { action: 'temps', label: 'TEMPERATURES' },
@@ -94,6 +117,21 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
   const [log, setLog] = useState<Entry[]>(loadLog);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [docker, setDocker] = useState<DockerStatus | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    let pending = false;
+    const refresh = async () => {
+      if (pending) return;
+      pending = true;
+      try { setDocker(await fetchDocker(AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]))); }
+      catch { if (!controller.signal.aborted) setDocker(null); }
+      finally { pending = false; }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15000);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, []);
   const [booting, setBooting] = useState(() => { try { return !sessionStorage.getItem(BOOT_KEY) && !reducedMotion(); } catch { return false; } });
   const [bootLines, setBootLines] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false); // mobile: system panel collapsed by default
@@ -124,6 +162,21 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
   }, []);
 
   useEffect(() => { void checkCore(); }, [checkCore]);
+
+  // The daily report M.A.X. writes just after midnight: shown once per day, on the first open.
+  const coreOnline = core.state === 'online';
+  useEffect(() => {
+    if (!coreOnline) return;
+    const controller = new AbortController();
+    void fetchDaily(controller.signal).then(reports => {
+      const latest = reports[0];
+      if (!latest) return;
+      try { if (localStorage.getItem(DAILY_KEY) === latest.date) return; localStorage.setItem(DAILY_KEY, latest.date); } catch { /* show it anyway */ }
+      const day = new Date(`${latest.date}T12:00:00`).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+      setLog(list => [...list, { id: nextId.current++, kind: 'max', time: clock(), text: `Daily report for ${day}: ${latest.text}` }]);
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, [coreOnline]);
 
   // Proactive alerts, written by code from live telemetry (no inference). Runs on open and
   // on every telemetry refresh, so an alert that appears later is announced when it appears,
@@ -191,8 +244,18 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
 
   const update = (id: number, fields: Partial<Entry>) => setLog(list => list.map(e => e.id === id ? { ...e, ...fields } : e));
 
+  const showGraph = (asked: string, metric: Metric) => {
+    setInput('');
+    setHistoryOpen(false);
+    setLog(list => [...list, { id: nextId.current++, kind: 'user', text: asked, time: clock() },
+      { id: nextId.current++, kind: 'max', time: clock(), graph: metric,
+        text: 'Saved history for the last 24 hours. Pick Thermal, Disk, CPU, RAM or SMART hours below.' }]);
+  };
+
   const send = async (request: { text?: string; action?: QuickAction; label?: string }) => {
-    if (busy || core.state !== 'online') return;
+    if (busy) return;
+    if (request.text && GRAPH_REQUEST.test(request.text)) { showGraph(request.text, graphMetric(request.text)); return; }
+    if (core.state !== 'online') return;
     const shown = request.label ?? request.text ?? '';
     if (!shown.trim()) return;
     setInput('');
@@ -207,6 +270,62 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     abortRef.current = controller;
     let streamed = '';
     try {
+      const control = request.text ? controlRequest(request.text) : null;
+      if (control) {
+        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]);
+        const status = await fetchServices(signal);
+        const app = status.apps.find(a => a.key === control.app);
+        const name = app?.name ?? control.app;
+        const rows: Row[] = status.apps.map(a => [a.name.toUpperCase(), a.up ? 'RUNNING' : a.state.toUpperCase()]);
+        if (!status.canControl) {
+          update(replyId, { text: `Only you, connected through Tailscale with the owner account, can start or restart apps. ${name} is ${app?.up ? 'running' : 'down'}.`, rows, pending: false });
+          return;
+        }
+        if (control.verb === 'start' && app?.up) {
+          update(replyId, { text: `${name} is already running. Say "restart ${name.toLowerCase()}" if it's misbehaving.`, rows, pending: false });
+          return;
+        }
+        if (control.verb === 'restart' && app?.up) {
+          update(replyId, { text: `Waiting for confirmation to restart ${name}…`, rows });
+          await new Promise(resolve => window.setTimeout(resolve, 50));
+          if (!window.confirm(`Restart ${name}? Anyone using it right now will be interrupted.`)) {
+            update(replyId, { text: `Left ${name} alone.`, rows, pending: false });
+            return;
+          }
+        }
+        update(replyId, { text: `${control.verb === 'restart' ? 'Restarting' : 'Starting'} ${name}…`, rows });
+        const message = await controlService(control.app, control.verb, signal);
+        // Give it a moment, then report what actually happened.
+        await new Promise(resolve => window.setTimeout(resolve, 8000));
+        const after = await fetchServices(AbortSignal.any([controller.signal, AbortSignal.timeout(15000)])).catch(() => null);
+        const now = after?.apps.find(a => a.key === control.app);
+        update(replyId, { pending: false, rows: after ? after.apps.map(a => [a.name.toUpperCase(), a.up ? 'RUNNING' : a.state.toUpperCase()]) : rows,
+          text: now?.up ? `${message} ${name} is up.` : `${message} ${name} isn't answering yet; it can take a minute (Immich longer). Ask again shortly.` });
+        return;
+      }
+      if (request.action === 'docker' || /\b(start|run|enable|turn on)\b.{0,40}\b(docker|(?:pc |immich )?workers)\b/i.test(request.text ?? '')) {
+        const state = await fetchDocker(AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]));
+        setDocker(state);
+        const rows: Row[] = [['PC DOCKER', !state.reachable ? 'UNREACHABLE' : state.engine === null ? 'UNKNOWN' : state.engine ? 'RUNNING' : 'STOPPED'],
+          ...state.workers.map(w => [w.name === 'immich_pc_microservices' ? 'BACKGROUND WORKER' : 'GPU / ML WORKER',
+            `${w.state.toUpperCase()}${w.health ? ` / ${w.health.toUpperCase()}` : ''}`] as Row)];
+        const stopped = state.reachable && (state.engine === false || state.workers.some(w => ['created', 'exited'].includes(w.state)));
+        let text = !state.reachable || state.error ? state.error ?? 'PC unavailable.' : state.starting ? 'PC workers are starting.'
+          : stopped ? 'Some PC workers are stopped.' : 'Live PC worker status. Running does not guarantee jobs are completing.';
+        if (state.result) text += `\n${state.result}`;
+        if (stopped && !state.canStart) text += '\nConnect Tailscale with the owner account, then press DOCKER to start them.';
+        update(replyId, { text, rows, pending: false });
+        if (stopped && state.canStart && !state.starting) {
+          // Let React paint the status before asking; typed start requests are explicit.
+          if (request.action === 'docker') {
+            await new Promise(resolve => window.setTimeout(resolve, 100));
+            if (controller.signal.aborted || !window.confirm('Your PC is reachable and some Immich workers are stopped. Turn them on now? Docker Desktop will also start if needed.')) return;
+          }
+          await startDockerWorkers(AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]));
+          update(replyId, { text: 'Start request accepted. Allow up to two minutes, then press DOCKER again to verify. The sidebar refreshes automatically.', rows, pending: false });
+        }
+        return;
+      }
       await streamChat(request.action ? { action: request.action, session: session.id }
         : { messages: [...history, { role: 'user', content: request.text! }], session: session.id }, event => {
         if (event.type === 'meta') update(replyId, { rows: event.rows });
@@ -315,6 +434,17 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
                   <small className="dim">Live last 24 hours · summary above reflects when you asked</small>
                 </section>}
               </div>
+              {entry.graph && (live
+                ? <section className="max-reply-graph max-graph-picker" aria-label="Saved 24-hour history graphs">
+                    <TemperatureGraph selectable initialMetric={entry.graph} />
+                  </section>
+                : <p className="dim">[ graph: open GRAPHS for the current history ]</p>)}
+              {live && entry.kind === 'alert' && core.state === 'online' && (() => {
+                const offline = entry.text.match(/^(.+) is offline\.$/)?.[1];
+                const app = offline && APP_WORDS.find(([pattern]) => pattern.test(offline))?.[1];
+                return app ? <button type="button" className="max-inline" disabled={busy}
+                  onClick={() => void send({ text: `start ${offline}`, label: `[ START ${offline.toUpperCase()} ]` })}>[ START {offline.toUpperCase()} ]</button> : null;
+              })()}
               {live && entry.kind === 'alert' && core.state === 'online' && <button type="button" className="max-inline" disabled={busy}
                 onClick={() => void send({ action: 'alerts', label: '[ ANALYZE ALERTS ]' })}>[ ANALYZE ]</button>}
               {(entry.corrected || entry.seconds != null) && <footer>
@@ -373,7 +503,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
                   return [<dt key={`${service.key}-n`}>{service.name.toUpperCase()}</dt>,
                     <dd key={`${service.key}-v`} className={up ? 'ok' : 'bad'}>{up ? 'ONLINE' : 'OFFLINE'}</dd>];
                 })}
-                  <dt>DOCKER</dt><dd className="dim" title="Not exposed by NILAVUS telemetry yet">N/A</dd>
+                  <dt>PC DOCKER</dt><dd className={!docker?.reachable ? 'dim' : docker.engine ? 'up' : 'down'} title="PC Immich worker bridge; refreshes every 15 seconds">{!docker ? 'UNKNOWN' : !docker.reachable ? 'UNREACHABLE' : docker.starting ? 'STARTING' : docker.engine === null ? 'UNKNOWN' : docker.engine ? `${docker.workers.filter(w => w.state === 'running').length}/2 RUNNING` : 'STOPPED'}</dd>
                 </dl>
               </div>
               <div className="max-block">
@@ -430,8 +560,10 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
           </div>}
 
           <div className="max-quick" role="group" aria-label="Quick actions">
-            {QUICK.map(q => <button key={q.action} type="button" disabled={busy || core.state !== 'online'}
-              onClick={() => void send({ action: q.action, label: `[ ${q.label} ]` })}>[ {q.label} ]</button>)}
+            {QUICK.map(q => q.action === 'graphs'
+              ? <button key={q.action} type="button" disabled={busy} onClick={() => showGraph(`[ ${q.label} ]`, 'temperature')}>[ {q.label} ]</button>
+              : <button key={q.action} type="button" disabled={busy || core.state !== 'online'}
+                  onClick={() => void send({ action: q.action as QuickAction, label: `[ ${q.label} ]` })}>[ {q.label} ]</button>)}
           </div>
 
           <div className="max-prompt">

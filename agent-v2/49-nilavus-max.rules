@@ -1,0 +1,11 @@
+// M.A.X. (runs as user "dosimeter") may start or restart these NILAVUS apps, nothing else,
+// and never stop them. Installed to /etc/polkit-1/rules.d/ by install-max.sh.
+polkit.addRule(function (action, subject) {
+  if (action.id !== "org.freedesktop.systemd1.manage-units" || subject.user !== "dosimeter") return;
+  var units = ["jellyfin.service", "kavita.service", "navidrome.service", "qbittorrent-nox@qbtuser.service",
+               "nilavus-immich-start.service", "nilavus-immich-restart.service"];
+  var verb = action.lookup("verb");
+  if (units.indexOf(action.lookup("unit")) >= 0 && (verb === "start" || verb === "restart")) {
+    return polkit.Result.YES;
+  }
+});

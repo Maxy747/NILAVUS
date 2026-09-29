@@ -1,0 +1,10 @@
+[Unit]
+Description=Check NILAVUS apps every ten minutes
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=10min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

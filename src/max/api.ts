@@ -5,6 +5,52 @@ export const MAX_URL = (import.meta.env.VITE_AI_URL || 'https://nilavus.whydah-d
 
 export type CoreHealth = { provider: string; model: string; available: boolean; modelLoaded: boolean | null };
 export type Row = [string, string];
+export type DockerStatus = { reachable: boolean; engine: boolean | null; starting: boolean; canStart: boolean;
+  workers: { name: string; state: string; health?: string | null }[]; error?: string; result?: string | null };
+
+export async function fetchDocker(signal?: AbortSignal): Promise<DockerStatus> {
+  const response = await fetch(`${MAX_URL}/docker`, { cache: 'no-store', signal });
+  if (!response.ok) throw new Error('Docker status unavailable');
+  return response.json() as Promise<DockerStatus>;
+}
+
+export async function startDockerWorkers(signal?: AbortSignal): Promise<void> {
+  const response = await fetch(`${MAX_URL}/docker/start`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true }), signal });
+  if (!response.ok) {
+    const body = await response.json() as { error?: string };
+    throw new Error(body.error ?? 'Worker start request failed');
+  }
+}
+// Apps M.A.X. can start or restart (never stop). Control is offered to the Tailscale owner only.
+export type AppKey = 'jellyfin' | 'immich' | 'kavita' | 'navidrome' | 'qbit';
+export type AppStatus = { key: AppKey; name: string; up: boolean; state: string; since?: number | null };
+export type AppEvent = { time: string; app: AppKey; name: string; action: string; downMinutes?: number; ok: boolean };
+export type ServicesStatus = { apps: AppStatus[]; events: AppEvent[]; canControl: boolean };
+
+export type DailyReport = { date: string; text: string; generatedAt: string };
+
+/** Daily reports written by M.A.X. just after each midnight, newest first. */
+export async function fetchDaily(signal?: AbortSignal): Promise<DailyReport[]> {
+  const response = await fetch(`${MAX_URL}/daily`, { cache: 'no-store', signal });
+  if (!response.ok) throw new Error('Daily reports unavailable');
+  return ((await response.json()) as { reports: DailyReport[] }).reports;
+}
+
+export async function fetchServices(signal?: AbortSignal): Promise<ServicesStatus> {
+  const response = await fetch(`${MAX_URL}/services`, { cache: 'no-store', signal });
+  if (!response.ok) throw new Error('App status unavailable');
+  return response.json() as Promise<ServicesStatus>;
+}
+
+export async function controlService(app: AppKey, verb: 'start' | 'restart', signal?: AbortSignal): Promise<string> {
+  const response = await fetch(`${MAX_URL}/services/${app}/${verb}`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true }), signal });
+  const body = await response.json().catch(() => ({})) as { error?: string; message?: string };
+  if (!response.ok) throw new Error(body.error ?? `Couldn't ${verb} it.`);
+  return body.message ?? `${verb} requested.`;
+}
+
 export type QuickAction = 'status' | 'nas' | 'dosimeter' | 'services' | 'links' | 'storage' | 'temps' | 'load' | 'uptime'
   | 'docker' | 'network' | 'alerts';
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import './temperature-graph.css';
 
 export type Sample = { sampled_at: string; temperature_c?: number; used_percent?: number; cpu_percent?: number; memory_percent?: number; power_on_hours?: number };
-type Metric = 'temperature' | 'disk' | 'cpu' | 'ram' | 'smart';
+export type Metric = 'temperature' | 'disk' | 'cpu' | 'ram' | 'smart';
 const titles: Record<Metric, string> = { temperature: 'THERMAL / 24H', disk: 'DISK USAGE / 24H', cpu: 'CPU USAGE / 24H', ram: 'RAM USAGE / 24H', smart: 'SMART HOURS / 24H' };
 export type History = { nodes: Record<string, Sample[]>; generatedAt: string };
 const endpoint = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'https://gibzoyvvmwvprkubfhvc.supabase.co/functions/v1').replace(/\/$/, '');

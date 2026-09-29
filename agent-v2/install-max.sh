@@ -53,10 +53,27 @@ echo "$MODEL_SHA256  $model" | sha256sum -c - || { echo "Model checksum mismatch
 # 3. Code and service
 python3 -m py_compile "$SRC/max_core.py"
 install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_core.py" "$LLM_DIR/max_core.py"
+install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_docker.py" "$LLM_DIR/max_docker.py"
+install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_services.py" "$LLM_DIR/max_services.py"
+install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_daily.py" "$LLM_DIR/max_daily.py"
 install -m 0644 -o "$MAX_USER" -g "$MAX_USER" "$SRC/max_eval.py" "$LLM_DIR/max_eval.py"
 install -m 0644 "$SRC/nilavu-max.service" /etc/systemd/system/nilavu-max.service
+
+# 3b. App controls: M.A.X. may start/restart Jellyfin, Kavita, Navidrome, qBittorrent and
+#     Immich (never stop), through a polkit rule and two fixed Immich units, not root or Docker.
+install -m 0644 "$SRC/49-nilavus-max.rules" /etc/polkit-1/rules.d/49-nilavus-max.rules
+install -m 0644 "$SRC/nilavus-immich-start.service" /etc/systemd/system/nilavus-immich-start.service
+install -m 0644 "$SRC/nilavus-immich-restart.service" /etc/systemd/system/nilavus-immich-restart.service
+# 3c. Watchdog (root timer): restarts an app that has been down for over an hour, at most every 6 h.
+install -d -m 0755 /opt/nilavus-services /var/lib/nilavus-services
+install -m 0644 "$SRC/max_services.py" /opt/nilavus-services/max_services.py
+install -m 0755 "$SRC/nilavus-services-watchdog.py" /opt/nilavus-services/nilavus-services-watchdog.py
+install -m 0644 "$SRC/nilavus-services-watchdog.service" /etc/systemd/system/nilavus-services-watchdog.service
+install -m 0644 "$SRC/nilavus-services-watchdog.timer" /etc/systemd/system/nilavus-services-watchdog.timer
+
 systemctl daemon-reload
 systemctl enable nilavu-max.service >/dev/null
+systemctl enable --now nilavus-services-watchdog.timer >/dev/null
 systemctl restart nilavu-max.service
 
 # 4. Exposure through Tailscale (/max belongs to another project; M.A.X. lives at /ai)

@@ -7,6 +7,9 @@ phrases them (a 3B model got 1/6 right choosing tools itself, 12/12 this way).
   GET  /health   -> provider, model, endpoint, whether the AI core is reachable/loaded
   GET  /context  -> structured live context (nodes, services, storage, network, alerts)
   GET  /history  -> past conversations from the chat log (Dosimeter or tailnet devices only)
+  GET  /daily    -> daily reports: a summary of each day, written just after midnight
+  GET  /services -> app status and recent watchdog restarts; POST /services/<app>/<start|restart>
+                    starts or restarts one app (Tailscale owner only, {"confirm": true})
   POST /chat     -> text/event-stream of {"type": "meta" | "token" | "done" | "error", ...}
                     body: {"messages": [{"role": "user"|"assistant", "content": "..."}],
                            "action": optional quick action, "session": optional console session id}
@@ -31,6 +34,9 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone, timedelta
 import math
+import max_docker
+import max_services
+import max_daily
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HOME = os.path.expanduser("~")
@@ -215,9 +221,6 @@ DRIVE_WORDS = {"full", "space", "storage", "disk", "drive", "drives", "bookussy"
 LOAD_WORDS = {"cpu", "memory", "ram", "load", "slow", "resources", "busy", "usage"}
 ALERT_WORDS = {"alert", "alerts", "warning", "warnings", "problem", "problems", "issue", "issues", "wrong"}
 UNMONITORED = {  # word -> honest answer until the integration exists
-    "docker": "Docker/container status isn't monitored by NILAVUS yet.",
-    "container": "Docker/container status isn't monitored by NILAVUS yet.",
-    "containers": "Docker/container status isn't monitored by NILAVUS yet.",
     "process": "Per-process usage isn't tracked by NILAVUS yet, only totals per machine.",
     "processes": "Per-process usage isn't tracked by NILAVUS yet, only totals per machine.",
     "yesterday": "NILAVUS doesn't keep telemetry history yet, so it can't compare with earlier.",
@@ -227,7 +230,7 @@ UNMONITORED = {  # word -> honest answer until the integration exists
 }
 SERVER_TOPIC = (STATUS_WORDS | TEMP_WORDS | UPTIME_WORDS | DRIVE_WORDS | LOAD_WORDS | ALERT_WORDS
                 | set(APP_ALIASES) | set(UNMONITORED)
-                | {"server", "servers", "nas", "nasig", "laptop", "dosimeter", "nilavus", "running", "network", "services"})
+                | {"docker", "container", "containers", "server", "servers", "nas", "nasig", "laptop", "dosimeter", "nilavus", "running", "network", "services"})
 NEGATIVE = re.compile(r"\b(not|isn't|isnt|down|unavailable|offline)\b")
 # Word an honest "not monitored" answer must contain.
 UNMONITORED_KEY = {text: key for text, key in [
@@ -336,8 +339,14 @@ def build_facts(question, ctx, action=None):
                 facts.append(text)
                 # Never let the model claim data NILAVUS doesn't have ("No changes since yesterday").
                 check(lambda a, key=UNMONITORED_KEY[text]: key in a.lower(), contradiction=True)
-        if action == "docker" or words & {"docker", "container", "containers"}:
-            rows.append(("DOCKER", "NOT MONITORED"))
+    if action == "docker" or words & {"docker", "container", "containers"}:
+        d = max_docker.status()
+        rows.append(('PC DOCKER', 'UNREACHABLE' if not d['reachable'] else 'UNKNOWN' if d['engine'] is None else 'RUNNING' if d['engine'] else 'STOPPED'))
+        facts.append('PC Docker status: ' + rows[-1][1] + '. This covers only the PC Immich workers, not every server container.')
+        for worker in d.get('workers', []):
+            rows.append((worker['name'], worker['state'] + (' / ' + worker['health'] if worker.get('health') else '')))
+            facts.append(worker['name'] + ': ' + rows[-1][1] + '.')
+        facts.append('Use the DOCKER button or type start PC workers to start stopped workers through the authenticated control. No workers have been started by this status answer.')
 
     app_keys = sorted({APP_ALIASES[w] for w in words if w in APP_ALIASES})
     for key in app_keys:
@@ -943,7 +952,21 @@ class Handler(BaseHTTPRequestHandler):
             return True
         return bool(self.tailnet_user) and (not HISTORY_USERS or self.tailnet_user in HISTORY_USERS)
 
+    def owner(self):
+        # Same rule as the PC workers: only the configured Tailscale owner, via Tailscale Serve.
+        return max_docker.allowed(self.client_address[0], self.forwarded, self.tailnet_user)
+
     def do_GET(self):
+        if self.route == "/daily":
+            # One summary per day, written just after midnight (same data the dashboard graphs show).
+            return self._json(200, {"reports": max_daily.reports()})
+        if self.route == "/services":
+            # Status is harmless to show; control is only offered to the owner.
+            return self._json(200, {**max_services.status(), "canControl": self.owner()})
+        if self.route == "/docker":
+            data = max_docker.status()
+            data['canStart'] = max_docker.allowed(self.client_address[0], self.forwarded, self.tailnet_user)
+            return self._json(200, data)
         if self.route == "/health":
             # Deliberately minimal: no paths, ports or endpoints.
             return self._json(200, {"ok": True, "name": "M.A.X.", "provider": AI.name, "model": AI.model,
@@ -960,6 +983,36 @@ class Handler(BaseHTTPRequestHandler):
         self._json(404, {"error": "not found"})
 
     def do_POST(self):
+        parts = self.route.strip("/").split("/")
+        if len(parts) == 3 and parts[0] == "services":
+            # POST /services/<app>/<start|restart> with {"confirm": true}: fixed operations only.
+            if not self.owner():
+                return self._json(403, {"error": "Only the owner, connected through Tailscale, can start or restart apps."})
+            if self.headers.get("Origin") not in ALLOWED_ORIGINS or self.headers.get("Content-Type") != "application/json":
+                return self._json(403, {"error": "Untrusted request origin or content type."})
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 1 <= length <= 128 or json.loads(self.rfile.read(length)) != {"confirm": True}:
+                    return self._json(400, {"error": "Explicit confirmation required."})
+                return self._json(202, max_services.act(parts[1], parts[2]))
+            except ValueError as error:
+                return self._json(409, {"error": str(error)})
+        if self.route == "/docker/start":
+            if not max_docker.allowed(self.client_address[0], self.forwarded, self.tailnet_user):
+                return self._json(403, {"error": "Connect Tailscale using the owner's account to start PC workers."})
+            if self.headers.get('Origin') not in ALLOWED_ORIGINS or self.headers.get('Content-Type') != 'application/json':
+                return self._json(403, {"error": "Untrusted request origin or content type."})
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+                if length < 1 or length > 128:
+                    raise ValueError('Invalid confirmation')
+                if json.loads(self.rfile.read(length)) != {'confirm': True}:
+                    raise ValueError('Explicit confirmation required')
+                result = max_docker.start()
+                print('PC worker start requested by authenticated owner', flush=True)
+                return self._json(202, result)
+            except Exception:
+                return self._json(503, {"error": "Could not start workers. Check PC connectivity, or wait 30 seconds and retry."})
         if self.route != "/chat":
             return self._json(404, {"error": "not found"})
         if not LIMITER.allow(self.client):
@@ -1013,6 +1066,7 @@ def exit_on_sigterm(signum, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, exit_on_sigterm)
     threading.Thread(target=reap_idle, daemon=True).start()
+    threading.Thread(target=max_daily.run_forever, name="daily-report", daemon=True).start()
     print(f"M.A.X. core on 127.0.0.1:{PORT} | provider={AI.name} model={AI.model}", flush=True)
     try:
         ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

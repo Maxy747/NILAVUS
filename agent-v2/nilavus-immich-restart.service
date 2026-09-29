@@ -1,0 +1,10 @@
+[Unit]
+Description=Restart the Immich containers (fixed operation for M.A.X.)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# Existing containers only: never recreates, pulls or changes the stack.
+ExecStart=/usr/bin/docker compose -p immich restart
+TimeoutStartSec=300

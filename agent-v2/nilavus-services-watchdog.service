@@ -1,0 +1,8 @@
+[Unit]
+Description=NILAVUS app watchdog: restart apps that have been down for over an hour
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/nilavus-services/nilavus-services-watchdog.py
+TimeoutStartSec=600
