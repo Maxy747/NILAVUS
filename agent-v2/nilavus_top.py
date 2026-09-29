@@ -12,8 +12,9 @@ import os
 import re
 import time
 
-CLOCK_TICKS = os.sysconf("SC_CLK_TCK")
-PAGE = os.sysconf("SC_PAGE_SIZE")
+# /proc is Linux-only; these fallbacks just let the module import elsewhere (e.g. tests on Windows).
+CLOCK_TICKS = os.sysconf("SC_CLK_TCK") if hasattr(os, "sysconf") else 100
+PAGE = os.sysconf("SC_PAGE_SIZE") if hasattr(os, "sysconf") else 4096
 CPUS = os.cpu_count() or 1
 
 UNITS = {  # systemd unit -> the name Max knows it by
