@@ -466,7 +466,7 @@ main::before {
 .smart-history-note { display: block; margin-top: 5px; color: #839bb3; }
 .storage-flip-card:focus-visible { outline: 1px solid #66e1eb; outline-offset: 4px; }
 .about-max { display: grid; margin: 32px 0; padding: 0; border: 1px solid #42607a; border-radius: 14px; background: #0d1d30aa;
-  cursor: pointer; overflow: hidden; transition: border-color .2s; }
+  cursor: pointer; overflow: hidden; align-items: start; transition: border-color .2s, height .55s cubic-bezier(.2,.8,.2,1); }
 .about-max:hover { border-color: #66e1eb88; }
 .about-max-tap:focus-visible { outline: 2px solid #66e1eb; outline-offset: 3px; }
 /* Both faces in the same cell: the card takes the taller face's height, so either side fits. */
@@ -484,7 +484,7 @@ main::before {
   .about-max-commands { grid-template-columns: 1fr; gap: 2px; }
   .about-max-commands dd { margin-bottom: 9px; }
 }
-@media (prefers-reduced-motion: reduce) { .about-max-face { transition: opacity .2s; transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { .about-max { transition: none; } .about-max-face { transition: opacity .2s; transform: none !important; } }
 .about-max h3 { margin: 12px 0; color: #66e1eb; font: 700 24px var(--mono); }
 .about-max p { font-size: 15px; line-height: 1.65; }
 .about-max small { color: #a6bad0; font: 11px var(--mono); }

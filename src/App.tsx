@@ -68,6 +68,9 @@ export default function Home() {
   const [gatewayOpen, setGatewayOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [maxCommandsShown, setMaxCommandsShown] = useState(false);
+  const [maxCardHeight, setMaxCardHeight] = useState<number | null>(null);
+  const maxFrontRef = useRef<HTMLDivElement | null>(null);
+  const maxBackRef = useRef<HTMLDivElement | null>(null);
   const [aboutLeaving, setAboutLeaving] = useState(false);
   const [modeAnimating, setModeAnimating] = useState(false);
   const [pinnedHealthCard, setPinnedHealthCard] = useState<NodeName | null>(null);
@@ -256,6 +259,18 @@ export default function Home() {
       shape.style.bottom = 'auto';
     });
   }, [gatewayOpen]);
+
+  // The M.A.X. card on the About page takes the height of the side that's showing (and animates
+  // to it), re-measuring whenever that side's text reflows.
+  useEffect(() => {
+    const face = (maxCommandsShown ? maxBackRef : maxFrontRef).current;
+    if (!aboutOpen || !face) return;
+    const measure = () => setMaxCardHeight(face.offsetHeight + 2); // + the card's 1px borders
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(face);
+    return () => observer.disconnect();
+  }, [aboutOpen, maxCommandsShown]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('about-active', aboutOpen);
@@ -470,8 +485,8 @@ export default function Home() {
         {/* Flip card: the front introduces M.A.X., the back lists what you can say. Both faces share
             one grid cell, so the card is always as tall as the taller face and nothing overflows. */}
         <section className={`about-max ${maxCommandsShown ? 'about-max-flipped' : ''}`} aria-labelledby="about-max-title"
-          onClick={() => setMaxCommandsShown(shown => !shown)}>
-          <div className="about-max-face about-max-front" aria-hidden={maxCommandsShown}>
+          style={maxCardHeight ? { height: maxCardHeight } : undefined} onClick={() => setMaxCommandsShown(shown => !shown)}>
+          <div className="about-max-face about-max-front" ref={maxFrontRef} aria-hidden={maxCommandsShown}>
             <span className="about-kicker">NEW ADDITION</span>
             <h3 id="about-max-title">Meet M.A.X.</h3>
             <p>Machine-Assisted eXecutive. Your home cloud, in conversation.</p>
@@ -488,7 +503,7 @@ export default function Home() {
             <small>Live telemetry · History graphs · Daily chat archive</small>
             <button type="button" className="about-max-tap" aria-expanded={maxCommandsShown} tabIndex={maxCommandsShown ? -1 : 0}>TAP TO SHOW COMMANDS ▸</button>
           </div>
-          <div className="about-max-face about-max-back" aria-hidden={!maxCommandsShown}>
+          <div className="about-max-face about-max-back" ref={maxBackRef} aria-hidden={!maxCommandsShown}>
             <span className="about-kicker">M.A.X. COMMANDS</span>
             <dl className="about-max-commands">
               <dt>Buttons</dt><dd>System status · Alerts · Graphs · Check Dosimeter · Check NAS · Services · App links · Storage · Temperatures · Resources · Uptime · Network · Docker</dd>
