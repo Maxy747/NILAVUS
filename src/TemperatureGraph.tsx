@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import './temperature-graph.css';
 
-type Sample = { sampled_at: string; temperature_c?: number; used_percent?: number; cpu_percent?: number; memory_percent?: number; power_on_hours?: number };
+export type Sample = { sampled_at: string; temperature_c?: number; used_percent?: number; cpu_percent?: number; memory_percent?: number; power_on_hours?: number };
 type Metric = 'temperature' | 'disk' | 'cpu' | 'ram' | 'smart';
 const titles: Record<Metric, string> = { temperature: 'THERMAL / 24H', disk: 'DISK USAGE / 24H', cpu: 'CPU USAGE / 24H', ram: 'RAM USAGE / 24H', smart: 'SMART HOURS / 24H' };
-type History = { nodes: Record<string, Sample[]>; generatedAt: string };
+export type History = { nodes: Record<string, Sample[]>; generatedAt: string };
 const endpoint = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'https://gibzoyvvmwvprkubfhvc.supabase.co/functions/v1').replace(/\/$/, '');
 const cache: Partial<Record<Metric, { data: History; at: number }>> = {};
 const pending: Partial<Record<Metric, Promise<History>>> = {};
-async function readHistory(metric: Metric) {
+export async function readHistory(metric: Metric) {
   const key = metric === 'ram' ? 'cpu' : metric;
   const cached = cache[key];
   if (cached && Date.now() - cached.at < 9000) return cached.data;

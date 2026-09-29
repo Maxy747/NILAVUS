@@ -1871,3 +1871,10 @@ html { scrollbar-width: thin; scrollbar-color: #2d6fa8 #07111e; }
 ::-webkit-scrollbar-thumb { background: #2d6fa8; border-radius: 8px; border: 1px solid #0b1e33; }
 ::-webkit-scrollbar-thumb:hover { background: #53b8ff; }
 ::-webkit-scrollbar-corner { background: #07111e; }
+
+/* System Health: one-line summary of the last 24 hours (DaySummary.tsx). */
+.day-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin: -4px 0 14px; color: #8fa3ba; font: 500 11px var(--font-geist-mono), monospace; letter-spacing: .04em; }
+.day-summary b { color: #66e1eb; font-weight: 700; letter-spacing: .16em; }
+.day-summary em { color: #dce8f5; font-style: normal; font-weight: 650; }
+.day-summary span + span { padding-left: 18px; border-left: 1px solid #89a4c62e; }
+@media (max-width: 760px) { .day-summary span + span { padding-left: 0; border-left: 0; } .day-summary span { flex-basis: 100%; } }
