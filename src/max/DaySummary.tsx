@@ -66,8 +66,9 @@ function coverageSentence(temperature: History | null, resource: History | null,
     : `${first.name} went quiet for about ${duration(first.ms)} in total.`;
 }
 
-// The summary changes slowly, so it's worked out at most once an hour per device: the first
-// visit reads the history, later visits within the hour reuse the saved sentence (no downloads).
+// The summary changes slowly, so it's worked out only when the site is opened and the saved one
+// is over an hour old; otherwise the saved sentence is shown with no downloads. An open page never
+// refreshes it on its own.
 const CACHE_KEY = 'max-day-summary-v1';
 const REFRESH_MS = 60 * 60_000;
 type Saved = { at: number; text: string };
@@ -95,11 +96,8 @@ export default function DaySummary() {
       if (!text) { setFailed(true); timer = window.setTimeout(update, 10 * 60_000); return; } // retry in 10 min
       const next = { at: Date.now(), text };
       save(next); setSaved(next); setFailed(false);
-      timer = window.setTimeout(update, REFRESH_MS);
     };
-    // Fresh enough? Wait until it's an hour old (if the page is still open by then).
-    const age = saved ? Date.now() - saved.at : Infinity;
-    if (age >= REFRESH_MS) void update(); else timer = window.setTimeout(update, REFRESH_MS - age);
+    if (!saved || Date.now() - saved.at >= REFRESH_MS) void update();
     return () => { disposed = true; window.clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per page load
   }, []);
