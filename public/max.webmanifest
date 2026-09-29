@@ -1,0 +1,16 @@
+{
+  "id": "./max.html",
+  "name": "M.A.X. — NILAVUS assistant",
+  "short_name": "M.A.X.",
+  "description": "Machine-Assisted eXecutive: live NILAVUS status and the M.A.X. assistant",
+  "start_url": "./max.html",
+  "scope": "./max.html",
+  "display": "standalone",
+  "background_color": "#050b16",
+  "theme_color": "#050b16",
+  "icons": [
+    { "src": "icons/max-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/max-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/max-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

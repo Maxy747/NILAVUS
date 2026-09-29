@@ -49,4 +49,6 @@ export default defineConfig({
   // (GitHub Pages at /NILAVUS/, the Cloudflare Worker and Dosimeter at /).
   base: './',
   plugins: [react(), precacheManifest()],
+  // Two pages: the dashboard, and M.A.X. on its own (installable as a separate desktop app).
+  build: { rollupOptions: { input: { index: 'index.html', max: 'max.html' } } },
 });

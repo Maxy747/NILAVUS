@@ -36,7 +36,9 @@ self.addEventListener('fetch', event => {
       try {
         return await fetch(request);
       } catch {
-        return (await caches.match('./index.html', MATCH)) || (await caches.match('./', MATCH)) || Response.error();
+        // The page itself if precached (index.html or max.html), else the dashboard shell.
+        return (await caches.match(request, MATCH)) || (await caches.match('./index.html', MATCH))
+          || (await caches.match('./', MATCH)) || Response.error();
       }
     })());
     return;
