@@ -97,7 +97,9 @@
 @keyframes max-pulse { 50% { opacity: .45; } }
 
 /* ---------- overlay shell ---------- */
-html.max-open { overflow: hidden; }
+/* Keep the scrollbar's space while the console is open, so nothing shifts (and the closing
+   console lands exactly on the M.A.X. button, which stays put). */
+html.max-open { overflow: hidden; scrollbar-gutter: stable; }
 
 .max-overlay {
   position: fixed;
@@ -121,17 +123,12 @@ html.max-open { overflow: hidden; }
   100% { transform: none; filter: none; }
 }
 
-/* Closing is the opening played backwards (same keyframes, easing reversed too). Separate
-   names, because changing only animation-direction wouldn't restart the animation. */
-@keyframes max-crt-close {
-  0% { opacity: 0; transform: scaleY(.012); filter: brightness(3); }
-  30% { opacity: 1; transform: scaleY(.012); filter: brightness(3); }
-  75% { transform: scaleY(1.02); filter: brightness(1.4); }
-  100% { transform: none; filter: none; }
-}
-@keyframes max-fade-close { from { opacity: 0; } }
-.max-closing .max-shell { animation: max-crt-close .5s cubic-bezier(.2,.8,.2,1) reverse both; }
-.max-closing .max-overlay { animation: max-fade-close .18s .32s ease-out reverse both; pointer-events: none; }
+/* Closing: the shell's stretch-into-the-button is a Web Animation (MaxLauncher); here only the
+   backdrop fades, so the page shows through as the console shrinks away. */
+@keyframes max-backdrop-out { to { background: transparent; backdrop-filter: none; } }
+.max-closing .max-overlay { animation: max-backdrop-out .5s ease-in forwards; pointer-events: none; }
+.max-closing .max-shell { transform-origin: center; }
+.max-fab-hidden { visibility: hidden; pointer-events: none; }
 
 .max-shell {
   position: relative;
