@@ -1852,3 +1852,6 @@ body.about-active {
 
   .mode-switching .service-card { animation: none; }
 }
+
+/* Startup reveal (App.tsx): hidden until each element gets its turn to animate in. */
+[data-lift="pending"] { opacity: 0; }

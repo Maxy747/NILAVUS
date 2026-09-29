@@ -110,6 +110,26 @@ html.max-open { overflow: hidden; }
 
 @keyframes max-fade { from { opacity: 0; } }
 
+/* The console opens like a CRT screen: a bright line that expands into the full window. */
+@keyframes max-crt-open {
+  0% { opacity: 0; transform: scaleY(.012); filter: brightness(3); }
+  30% { opacity: 1; transform: scaleY(.012); filter: brightness(3); }
+  75% { transform: scaleY(1.02); filter: brightness(1.4); }
+  100% { transform: none; filter: none; }
+}
+
+/* Closing is the opening played backwards (same keyframes, easing reversed too). Separate
+   names, because changing only animation-direction wouldn't restart the animation. */
+@keyframes max-crt-close {
+  0% { opacity: 0; transform: scaleY(.012); filter: brightness(3); }
+  30% { opacity: 1; transform: scaleY(.012); filter: brightness(3); }
+  75% { transform: scaleY(1.02); filter: brightness(1.4); }
+  100% { transform: none; filter: none; }
+}
+@keyframes max-fade-close { from { opacity: 0; } }
+.max-closing .max-shell { animation: max-crt-close .5s cubic-bezier(.2,.8,.2,1) reverse both; }
+.max-closing .max-overlay { animation: max-fade-close .18s .32s ease-out reverse both; pointer-events: none; }
+
 .max-shell {
   position: relative;
   display: grid;
@@ -126,6 +146,7 @@ html.max-open { overflow: hidden; }
   color: var(--max-text);
   font-family: var(--max-mono);
   box-shadow: 0 30px 80px rgba(0, 0, 0, .55), 0 0 40px rgba(55, 184, 255, .06);
+  animation: max-crt-open .5s cubic-bezier(.2,.8,.2,1) both;
 }
 
 .max-scanlines {
@@ -444,6 +465,7 @@ html.max-open { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   .max-overlay,
+  .max-shell,
   .max-entry,
   .max-led,
   .max-cursor,

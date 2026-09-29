@@ -6,12 +6,15 @@ import { alerts, storageStatus, systemStatus, type MaxTelemetry } from './teleme
 
 export type CoreState = 'checking' | 'online' | 'offline';
 const HEALTH_EVERY_MS = 60_000; // /health never touches the model, so this is cheap
+const CLOSE_MS = 500; // matches the close animation in max.css (the opening, reversed)
 
 type Props = { telemetry: MaxTelemetry; enabled: boolean; onSound?: (name: 'click' | 'back') => void; onCoreStateChange?: (state: CoreState) => void };
 
 /** Entry points to M.A.X.: a dashboard section, a floating button, and Ctrl+K or "/". */
 export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateChange }: Props) {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const closingRef = useRef(false);
   const opener = useRef<HTMLElement | null>(null);
   const [core, setCore] = useState<CoreState>('checking');
   const { status, storage } = useMemo(() => {
@@ -54,10 +57,20 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
     setOpen(true);
   }, [onSound]);
 
+  // Closing plays the opening animation backwards, then removes the console.
   const hide = useCallback(() => {
+    if (closingRef.current) return;
     onSound?.('back');
-    setOpen(false);
-    opener.current?.focus?.(); // give focus back to whatever opened the console
+    const finish = () => {
+      closingRef.current = false;
+      setClosing(false);
+      setOpen(false);
+      opener.current?.focus?.(); // give focus back to whatever opened the console
+    };
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { finish(); return; }
+    closingRef.current = true;
+    setClosing(true);
+    window.setTimeout(finish, CLOSE_MS);
   }, [onSound]);
 
   useEffect(() => {
@@ -94,7 +107,7 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
     </section>
     {/* Portal to <body>: the dashboard sections use transforms, which would trap position: fixed. */}
     {createPortal(open
-      ? <MaxConsole telemetry={telemetry} onClose={hide} />
+      ? <div className={closing ? 'max-closing' : undefined}><MaxConsole telemetry={telemetry} onClose={hide} /></div>
       : <button type="button" className="max-fab" onClick={show} aria-label={`Open M.A.X. console, ${coreLabel.toLowerCase()} (Ctrl+K)`}>
           <span className={`max-led ${led}`} aria-hidden="true" />M.A.X.
         </button>, document.body)}

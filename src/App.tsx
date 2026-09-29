@@ -106,11 +106,73 @@ export default function Home() {
   useEffect(() => {
     document.documentElement.classList.toggle('gateway-active', !gatewayOpen);
     document.body.classList.toggle('gateway-active', !gatewayOpen);
-    if (gatewayOpen) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.querySelector('main')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     return () => {
       document.documentElement.classList.remove('gateway-active');
       document.body.classList.remove('gateway-active');
     };
+  }, [gatewayOpen]);
+
+  // Cards rise into place one by one, lift, and settle back: the visible ones right after
+  // entering, the rest (System Health, drives) as they scroll into view. Status lights slide in
+  // first, the connection toggle flashes its selection and the M.A.X. card opens like a CRT screen. Uses the Web Animations API on `translate`/`scale`, which stack
+  // on top of the cards' own CSS animations and hover `transform` instead of replacing them.
+  // The pending flag is a data attribute because React rewrites className on status refreshes.
+  useEffect(() => {
+    if (!gatewayOpen || !('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const cards = [...document.querySelectorAll<HTMLElement>('.node-statuses .status, .connection-panel, .service-card, .max-teaser-card, .health-card, .drive-item')];
+    let nextSlot = performance.now() + 350; // let the page's own reveal get going first
+    const lift = (card: HTMLElement) => {
+      const now = performance.now();
+      const start = Math.max(now, nextSlot);
+      nextSlot = start + 90;
+      const timing = { delay: start - now, fill: 'backwards' as const };
+      if (card.classList.contains('status')) {
+        // Status lights: slide in from the right and switch on.
+        nextSlot = start + 140;
+        card.animate([
+          { opacity: 0, translate: '10px 0', filter: 'brightness(2.2)' },
+          { opacity: 1, translate: '0 0', filter: 'brightness(1)' },
+        ], { ...timing, duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      } else if (card.classList.contains('max-teaser-card')) {
+        card.animate([
+          { opacity: 0, scale: '1 .02', filter: 'brightness(3)' },
+          { opacity: 1, scale: '1 .02', filter: 'brightness(3)', offset: .3 },
+          { opacity: 1, scale: '1 1.04', filter: 'brightness(1.5)', offset: .75 },
+          { opacity: 1, scale: '1 1', filter: 'brightness(1)' },
+        ], { ...timing, duration: 620, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      } else {
+        card.animate([
+          { opacity: 0, translate: '0 22px', scale: '.97' },
+          { opacity: 1, translate: '0 -12px', scale: '1.02', offset: .55 },
+          { opacity: 1, translate: '0 2px', scale: '1', offset: .8 },
+          { opacity: 1, translate: '0 0', scale: '1' },
+        ], { ...timing, duration: 760, easing: 'cubic-bezier(.25,.75,.3,1)' });
+        // Connection panel: once it has landed, the selected LAN/Remote button lights up.
+        card.querySelector<HTMLElement>('.mode-toggle button.active')?.animate([
+          { filter: 'brightness(1)', scale: '1' },
+          { filter: 'brightness(1.9) saturate(1.3)', scale: '1.04', offset: .35 },
+          { filter: 'brightness(1)', scale: '1' },
+        ], { delay: start - now + 520, duration: 650, easing: 'ease-out' });
+      }
+      delete card.dataset.lift;
+    };
+    let observed = false;
+    const observer = new IntersectionObserver(entries => {
+      observed = true;
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        observer.unobserve(entry.target);
+        lift(entry.target as HTMLElement);
+      }
+    }, { threshold: 0.15 });
+    for (const card of cards) { card.dataset.lift = 'pending'; observer.observe(card); }
+    // Never leave the page invisible: if the observer hasn't reported, just show everything.
+    const failsafe = window.setTimeout(() => {
+      if (!observed) { observer.disconnect(); for (const card of cards) delete card.dataset.lift; }
+    }, 2000);
+    return () => { window.clearTimeout(failsafe); observer.disconnect(); for (const card of cards) delete card.dataset.lift; };
   }, [gatewayOpen]);
 
   useEffect(() => {
@@ -233,6 +295,13 @@ export default function Home() {
     }, 650);
   };
 
+  // <main> clips its overflow, but focus and scrollIntoView can still scroll it (and it is wider
+  // than a phone screen), so resetting only the window can leave the ACCESS screen shifted.
+  const resetScroll = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.querySelector('main')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  };
+
   const returnToAccess = () => {
     if (aboutLeaving) return;
     // This is a deliberate return to the ACCESS gateway, so use its menu cue.
@@ -243,7 +312,7 @@ export default function Home() {
       setAboutLeaving(false);
       setGatewayLeaving(false);
       setGatewayOpen(false);
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      resetScroll();
     }, 650);
   };
 
