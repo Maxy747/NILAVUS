@@ -8,6 +8,38 @@ export type CoreState = 'checking' | 'online' | 'offline';
 const HEALTH_EVERY_MS = 60_000; // /health never touches the model, so this is cheap
 const CLOSE_MS = 500; // matches the close animation in max.css (the opening, reversed)
 
+// Lines the dashboard card types out in turn: questions M.A.X. really answers from telemetry.
+const PROMPTS = [
+  'How can I help, Max?',
+  'Try: which machine is hotter?',
+  'Try: how full is Bookussy?',
+  'Try: is Immich up?',
+  'Try: any alerts?',
+  'Try: links to my apps',
+  'Try: how long has NASig been up?',
+];
+
+/** Terminal-style prompt: types a line, holds it, erases it, moves to the next. */
+function TypedPrompt() {
+  const [index, setIndex] = useState(0);
+  const [length, setLength] = useState(PROMPTS[0].length); // the first line starts fully typed
+  const [erasing, setErasing] = useState(false);
+  const line = PROMPTS[index];
+  useEffect(() => {
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let delay: number, step: () => void;
+    if (still) { // no typing: just swap the whole line every few seconds
+      delay = 4000; step = () => { const next = (index + 1) % PROMPTS.length; setIndex(next); setLength(PROMPTS[next].length); };
+    } else if (!erasing && length < line.length) { delay = 45; step = () => setLength(n => n + 1); }
+    else if (!erasing) { delay = 2800; step = () => setErasing(true); }
+    else if (length > 0) { delay = 20; step = () => setLength(n => n - 1); }
+    else { delay = 350; step = () => { setErasing(false); setIndex(i => (i + 1) % PROMPTS.length); }; }
+    const timer = window.setTimeout(step, delay);
+    return () => window.clearTimeout(timer);
+  }, [index, length, erasing, line.length]);
+  return <span className="max-teaser-prompt" aria-hidden="true">&gt; {line.slice(0, length)}<span className="max-cursor">_</span></span>;
+}
+
 type Props = { telemetry: MaxTelemetry; enabled: boolean; onSound?: (name: 'click' | 'back') => void; onCoreStateChange?: (state: CoreState) => void };
 
 /** Entry points to M.A.X.: a dashboard section, a floating button, and Ctrl+K or "/". */
@@ -99,9 +131,9 @@ export default function MaxLauncher({ telemetry, enabled, onSound, onCoreStateCh
   return <>
     <section className="max-teaser" aria-label="M.A.X. assistant">
       <div className="section-heading"><span>M.A.X.</span><b>Machine-Assisted eXecutive</b></div>
-      <button type="button" className="max-teaser-card" onClick={show}>
+      <button type="button" className="max-teaser-card" onClick={show} aria-label={`Open M.A.X. console. M.A.X. ${coreLabel.toLowerCase()}, system status ${status.toLowerCase()}, storage status ${storage.toLowerCase()}.`}>
         <span className="max-teaser-line"><span className={`max-led ${led}`} aria-hidden="true" />M.A.X. {coreLabel} · SYSTEM STATUS: {status} · STORAGE STATUS: {storage}</span>
-        <span className="max-teaser-prompt">&gt; How can I help, Max?<span className="max-cursor" aria-hidden="true">_</span></span>
+        <TypedPrompt />
         <kbd>CTRL+K</kbd>
       </button>
     </section>

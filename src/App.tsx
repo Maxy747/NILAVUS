@@ -1,11 +1,45 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 import MaxLauncher, { type CoreState } from './max/MaxLauncher';
 import TemperatureGraph from './TemperatureGraph';
 import { functionsUrl, maxTelemetryFrom, services, useNodeStatus, type NodeName } from './status';
 
 type ConnectionMode = 'lan' | 'remote';
 type SoundName = 'intro' | 'hover' | 'click' | 'toggle' | 'offline' | 'back' | 'about' | 'logo' | 'home' | 'shape';
+
+/**
+ * Counts the numbers inside `el` up from 0 to what they show ("52°C", "1.47", "5d 2h"), keeping
+ * their format. Works on React's own text nodes in place and stops for any node React rewrites
+ * mid-count (a status refresh), so the page never ends on a stale value.
+ */
+function countUp(el: Element, delay: number, duration: number) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const nodes: { node: Text; target: string; written: string }[] = [];
+  for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+    if (/\d/.test(node.data)) nodes.push({ node, target: node.data, written: node.data });
+  }
+  if (!nodes.length) return;
+  const frame = (value: string, t: number) => value.replace(/\d+(?:\.\d+)?/g, number => {
+    const decimals = number.split('.')[1]?.length ?? 0;
+    return (Number(number) * t).toFixed(decimals);
+  });
+  const begin = performance.now() + delay;
+  const tick = (now: number) => {
+    const t = Math.min(1, Math.max(0, (now - begin) / duration));
+    const eased = 1 - Math.pow(1 - t, 3);
+    let running = false;
+    for (const item of nodes) {
+      if (item.node.data !== item.written) continue; // React updated it: leave the fresh value alone
+      item.written = t >= 1 ? item.target : frame(item.target, eased);
+      item.node.data = item.written;
+      running ||= t < 1;
+    }
+    if (running) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 
 const displayUrl = (url: string | null) => url ? url.replace(/^https?:\/\//, '').replace(/\/$/, '') : 'Remote link not configured';
 const formatMetric = (value: number | null | undefined, suffix = '%') => value == null ? '—' : `${Math.round(value)}${suffix}`;
@@ -155,6 +189,14 @@ export default function Home() {
           { filter: 'brightness(1.9) saturate(1.3)', scale: '1.04', offset: .35 },
           { filter: 'brightness(1)', scale: '1' },
         ], { delay: start - now + 520, duration: 650, easing: 'ease-out' });
+        // Numbers count up to their live values: System Health metrics and drive percentages.
+        card.querySelectorAll('.metric-grid strong').forEach(value => countUp(value, start - now + 250, 900));
+        card.querySelectorAll('.drive-capacity b').forEach(value => countUp(value, start - now + 300, 1100));
+        // Storage bars fill from empty to their live value once the card has risen in. A single
+        // start keyframe animates to whatever width the bar really has.
+        card.querySelectorAll<HTMLElement>('.drive-bar span').forEach(bar => bar.animate([{ width: '0%', offset: 0 }], {
+          delay: start - now + 300, duration: 1100, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards',
+        }));
       }
       delete card.dataset.lift;
     };
@@ -174,6 +216,20 @@ export default function Home() {
     }, 2000);
     return () => { window.clearTimeout(failsafe); observer.disconnect(); for (const card of cards) delete card.dataset.lift; };
   }, [gatewayOpen]);
+
+  // Smooth, momentum-style mouse-wheel scrolling on the dashboard (Lenis). Off for the ACCESS
+  // and About screens, on touch screens (already smooth, and native feels right there) and with
+  // reduced motion. The M.A.X. console and anything marked data-lenis-prevent scroll natively.
+  useEffect(() => {
+    if (!gatewayOpen || aboutOpen) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce), (pointer: coarse)').matches) return;
+    const lenis = new Lenis({
+      autoRaf: true,
+      lerp: 0.1,
+      prevent: node => node.closest('.max-overlay, [data-lenis-prevent]') !== null,
+    });
+    return () => lenis.destroy();
+  }, [gatewayOpen, aboutOpen]);
 
   useEffect(() => {
     if (gatewayOpen) return;
@@ -415,6 +471,15 @@ export default function Home() {
           <h3 id="about-max-title">Meet M.A.X.</h3>
           <p>Machine-Assisted eXecutive. Your home cloud, in conversation.</p>
           <p>A locally hosted assistant on Dosimeter, bringing service status, storage and saved temperature history into one console. Ask what’s running, check a spike, or find your apps—without leaving NILAVUS.</p>
+          <dl className="about-max-spec" aria-label="M.A.X. technical details">
+            <dt>Model</dt><dd>Llama 3.2 3B Instruct · Q4_K_M GGUF (~2 GB), checksum-verified</dd>
+            <dt>Runtime</dt><dd>llama.cpp on Dosimeter’s CPU · 2 threads · 4K context · no GPU, no cloud</dd>
+            <dt>Footprint</dt><dd>Loads on the first question, unloads after 10 idle minutes · capped at 2 cores and 4 GB, low priority so Immich and Jellyfin come first</dd>
+            <dt>Method</dt><dd>Code reads the telemetry and works out the facts; the model only phrases them. Every answer is checked against live data and corrected if it’s wrong</dd>
+            <dt>Speed</dt><dd>Streams word by word · first words in ~4–17 s · prompt cache reuses repeated context</dd>
+            <dt>Tested</dt><dd>17/17 on a graded eval of real questions against live telemetry</dd>
+            <dt>Access</dt><dd>Public through Tailscale Funnel at /ai · rate-limited per visitor · chat log stays on Dosimeter</dd>
+          </dl>
           <small>Live telemetry · History graphs · Daily chat archive</small>
         </section>
         <div className="about-spec developers-spec"><h3>Developers:</h3><p>Max &amp; Mar</p></div>
