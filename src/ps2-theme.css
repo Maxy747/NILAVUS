@@ -1872,3 +1872,8 @@ html { scrollbar-width: thin; scrollbar-color: #2d6fa8 #07111e; }
 ::-webkit-scrollbar-thumb:hover { background: #53b8ff; }
 ::-webkit-scrollbar-corner { background: #07111e; }
 
+
+/* System Health: each machine's nickname, faint on the right of the title, blending into the card. */
+.health-title { position: relative; }
+.node-alias { position: absolute; right: 0; bottom: 14px; color: #9fc2ff; opacity: .13; font: 700 30px/1 var(--font-geist-sans), sans-serif; font-style: normal; letter-spacing: -.02em; pointer-events: none; user-select: none; }
+@media (max-width: 430px) { .node-alias { font-size: 22px; } }
