@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { controlService, fetchDaily, fetchServices, type AppKey, fetchDocker, startDockerWorkers, fetchHealth, fetchHistory, MAX_URL, streamChat, type DockerStatus, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
+import { controlService, fetchDaily, fetchPc, fetchServices, wakePc, type AppKey, fetchDocker, startDockerWorkers, fetchHealth, fetchHistory, MAX_URL, streamChat, type DockerStatus, type PcStatus, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
 import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, nodesReporting, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
 import './max.css';
 import TemperatureGraph, { type Metric } from '../TemperatureGraph';
@@ -23,6 +23,9 @@ const controlRequest = (text: string): { app: AppKey; verb: 'start' | 'restart' 
   if (!verb || !app || /\b(stop|kill|shut ?down|disable)\b/i.test(text)) return null;
   return { app, verb: verb === 'restart' || verb === 'reboot' ? 'restart' : 'start' };
 };
+
+// "wake my pc", "turn on the computer"... (not "start PC workers", which is the Docker command).
+const WAKE_REQUEST = /\b(wake( up)?|turn on|power on|boot( up)?|start)( up)?\b.{0,20}\b(my |the )?(pc|computer|desktop)\b(?!.*\bworkers?\b)/i;
 
 // "show graphs", "cpu graph", "temperature chart"... answered locally from the saved history:
 // no model, and it works while the AI core is offline.
@@ -120,6 +123,14 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [docker, setDocker] = useState<DockerStatus | null>(null);
+  const [pcStatus, setPcStatus] = useState<PcStatus | null>(null);
+  useEffect(() => { // the desktop PC: awake or not, every 30 s while the console is open
+    const controller = new AbortController();
+    const refresh = () => fetchPc(AbortSignal.any([controller.signal, AbortSignal.timeout(8000)])).then(setPcStatus, () => undefined);
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 30000);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     let pending = false;
@@ -272,6 +283,31 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     abortRef.current = controller;
     let streamed = '';
     try {
+      if (request.text && WAKE_REQUEST.test(request.text)) {
+        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]);
+        const pc = await fetchPc(signal);
+        setPcStatus(pc);
+        if (pc.up) { update(replyId, { text: 'Your PC is already on.', rows: [['PC', 'AWAKE']], pending: false }); return; }
+        if (!pc.canWake) {
+          update(replyId, { text: 'Your PC is asleep or off. Only you, connected through Tailscale with the owner account, can wake it.', rows: [['PC', 'ASLEEP / OFF']], pending: false });
+          return;
+        }
+        update(replyId, { text: 'Waiting for confirmation to wake your PC…', rows: [['PC', 'ASLEEP / OFF']] });
+        await new Promise(resolve => window.setTimeout(resolve, 50));
+        if (!window.confirm('Wake your PC now?')) { update(replyId, { text: 'Left the PC asleep.', pending: false }); return; }
+        const message = await wakePc(signal);
+        update(replyId, { text: `${message} Checking…`, rows: [['PC', 'WAKING']] });
+        // Watch for it to come up (about 90 s at most), then say what actually happened.
+        for (let i = 0; i < 9 && !controller.signal.aborted; i += 1) {
+          await new Promise(resolve => window.setTimeout(resolve, 10000));
+          const now = await fetchPc(AbortSignal.any([controller.signal, AbortSignal.timeout(8000)])).catch(() => null);
+          if (now) setPcStatus(now);
+          if (now?.up) { update(replyId, { text: 'Your PC is awake.', rows: [['PC', 'AWAKE']], pending: false }); return; }
+        }
+        update(replyId, { pending: false, rows: [['PC', 'NO ANSWER YET']],
+          text: "The wake signal went out but the PC hasn't answered after 90 seconds. If it was fully shut down, the BIOS may not allow waking from off; from sleep it should work. Is it on Ethernet and plugged in?" });
+        return;
+      }
       const control = request.text ? controlRequest(request.text) : null;
       if (control) {
         const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]);
@@ -505,6 +541,10 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
                   return [<dt key={`${service.key}-n`}>{service.name.toUpperCase()}</dt>,
                     <dd key={`${service.key}-v`} className={up ? 'ok' : 'bad'}>{up ? 'ONLINE' : 'OFFLINE'}</dd>];
                 })}
+                  <dt>PC</dt><dd className={pcStatus == null ? 'dim' : pcStatus.up ? 'ok' : 'bad'}>
+                    {pcStatus == null ? 'UNKNOWN' : pcStatus.up ? 'AWAKE' : 'ASLEEP / OFF'}
+                    {pcStatus && !pcStatus.up && pcStatus.canWake && <button type="button" className="max-inline max-wake" disabled={busy}
+                      onClick={() => void send({ text: 'wake my pc', label: '[ WAKE PC ]' })}>WAKE</button>}</dd>
                   <dt>PC DOCKER</dt><dd className={!docker?.reachable ? 'dim' : docker.engine ? 'up' : 'down'} title="PC Immich worker bridge; refreshes every 15 seconds">{!docker ? 'UNKNOWN' : !docker.reachable ? 'UNREACHABLE' : docker.starting ? 'STARTING' : docker.engine === null ? 'UNKNOWN' : docker.engine ? `${docker.workers.filter(w => w.state === 'running').length}/2 RUNNING` : 'STOPPED'}</dd>
                 </dl>
               </div>

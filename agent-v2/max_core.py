@@ -7,6 +7,7 @@ phrases them (a 3B model got 1/6 right choosing tools itself, 12/12 this way).
   GET  /health   -> provider, model, endpoint, whether the AI core is reachable/loaded
   GET  /context  -> structured live context (nodes, services, storage, network, alerts)
   GET  /history  -> past conversations from the chat log (Dosimeter or tailnet devices only)
+  GET  /pc       -> whether the desktop PC is awake; POST /pc/wake sends Wake-on-LAN (owner only)
   GET  /daily    -> daily reports: a summary of each day, written just after midnight
   GET  /services -> app status and recent watchdog restarts; POST /services/<app>/<start|restart>
                     starts or restarts one app (Tailscale owner only, {"confirm": true})
@@ -38,6 +39,7 @@ import max_docker
 import max_services
 import max_daily
 import max_procs
+import max_wake
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HOME = os.path.expanduser("~")
@@ -971,6 +973,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.route == "/daily":
             # One summary per day, written just after midnight (same data the dashboard graphs show).
             return self._json(200, {"reports": max_daily.reports()})
+        if self.route == "/pc":
+            # Is the desktop PC awake? Harmless to show; waking is offered to the owner only.
+            return self._json(200, {"up": max_wake.is_up(), "canWake": self.owner()})
         if self.route == "/services":
             # Status is harmless to show; control is only offered to the owner.
             return self._json(200, {**max_services.status(), "canControl": self.owner()})
@@ -994,6 +999,21 @@ class Handler(BaseHTTPRequestHandler):
         self._json(404, {"error": "not found"})
 
     def do_POST(self):
+        if self.route == "/pc/wake":
+            # Wake-on-LAN for the desktop PC: owner only, trusted Origin, {"confirm": true}, 60 s cooldown.
+            if not self.owner():
+                return self._json(403, {"error": "Only the owner, connected through Tailscale, can wake the PC."})
+            if self.headers.get("Origin") not in ALLOWED_ORIGINS or self.headers.get("Content-Type") != "application/json":
+                return self._json(403, {"error": "Untrusted request origin or content type."})
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 1 <= length <= 128 or json.loads(self.rfile.read(length)) != {"confirm": True}:
+                    return self._json(400, {"error": "Explicit confirmation required."})
+                return self._json(202, max_wake.wake())
+            except ValueError as error:
+                return self._json(409, {"error": str(error)})
+            except OSError as error:
+                return self._json(503, {"error": f"Couldn't send the wake signal: {error}"})
         parts = self.route.strip("/").split("/")
         if len(parts) == 3 and parts[0] == "services":
             # POST /services/<app>/<start|restart> with {"confirm": true}: fixed operations only.

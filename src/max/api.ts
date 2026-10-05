@@ -37,6 +37,24 @@ export async function fetchDaily(signal?: AbortSignal): Promise<DailyReport[]> {
   return ((await response.json()) as { reports: DailyReport[] }).reports;
 }
 
+// The desktop PC: is it awake, and can this visitor wake it (the Tailscale owner only)?
+export type PcStatus = { up: boolean; canWake: boolean };
+
+export async function fetchPc(signal?: AbortSignal): Promise<PcStatus> {
+  const response = await fetch(`${MAX_URL}/pc`, { cache: 'no-store', signal });
+  if (!response.ok) throw new Error('PC status unavailable');
+  return response.json() as Promise<PcStatus>;
+}
+
+/** Ask Dosimeter to send a Wake-on-LAN packet to the PC. */
+export async function wakePc(signal?: AbortSignal): Promise<string> {
+  const response = await fetch(`${MAX_URL}/pc/wake`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true }), signal });
+  const body = await response.json().catch(() => ({})) as { error?: string; message?: string };
+  if (!response.ok) throw new Error(body.error ?? "Couldn't wake the PC.");
+  return body.message ?? 'Wake signal sent.';
+}
+
 export async function fetchServices(signal?: AbortSignal): Promise<ServicesStatus> {
   const response = await fetch(`${MAX_URL}/services`, { cache: 'no-store', signal });
   if (!response.ok) throw new Error('App status unavailable');
