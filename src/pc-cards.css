@@ -1,0 +1,38 @@
+.pc-awake { border-color: #55e89680; box-shadow: 0 0 16px #55e89624; }
+.pc-dim { opacity: .75; }
+.pc-remote .card-bottom { grid-template-columns: minmax(0,1fr); gap: 10px; }
+.pc-remote small,.pc-message,.pc-mini small { color: #91a5bc; font-size: 10px; line-height: 1.5; }
+.pc-message:empty { display: none; }
+.pc-settings { color: #8ad9ee; font-size: 11px; }
+.pc-mini { max-width: 360px; margin: 16px auto; background: #081325; border: 1px solid #40607c; border-radius: 14px; perspective: 1000px; }
+.pc-mini-inner { display: grid; transform-style: preserve-3d; transition: transform .4s ease; min-height: 125px; }
+.pc-mini-inner.pc-flipped { transform: rotateY(180deg); }
+.pc-mini-front,.pc-mini-back { grid-area: 1/1; padding: 16px; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.pc-mini-front { background: transparent; border: 0; color: #dce8f5; cursor: pointer; font: inherit; }
+.pc-mini-front small { width: 100%; }
+.pc-mini-back { transform: rotateY(180deg); }
+.pc-mini-back>button { background: #12263d; border: 1px solid #40607c; border-radius: 8px; color: #dce8f5; padding: 9px; cursor: pointer; }
+@media(prefers-reduced-motion:reduce) { .pc-mini-inner { transition: none; } }
+.pc-logo { width: 28px; height: 28px; flex-shrink: 0; color: #8bceff; }
+.service-card.overdrive-card { --accent: #b17aff; background: #1c1233; border-color: #8955b8; }
+.overdrive-card .pc-logo { color: #c999ff; }
+.storage-pc-row { display: flex; justify-content: center; align-items: center; gap: 18px; margin: 18px auto; }
+.storage-pc-row .health-drive-panel { margin: 0; flex: 0 1 552px; min-width: 0; }
+.storage-pc-row .pc-mini { margin: 0; flex: 0 0 110px; max-width: 110px; }
+.pc-mini-inner { min-height: 180px; position: relative; }
+.pc-mini-front { flex-direction: column; justify-content: center; flex-wrap: nowrap; gap: 12px; padding: 12px; font-size: 13px; }
+.pc-mini-front b { font-size: 10px; }
+.pc-mini-back { position: absolute; inset: 0; overflow-y: auto; padding: 10px; gap: 6px; cursor: pointer; justify-content: center; text-align: center; }
+.pc-remote-actions { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
+.pc-remote-actions .open-button { min-width: 0; padding: 8px; white-space: normal; text-align: center; }
+@media(max-width:760px) {
+  .storage-pc-row { gap: 10px; }
+  .storage-pc-row .pc-mini { flex-basis: 100px; }
+  .pc-mini-front { flex-wrap: wrap; justify-content: center; gap: 5px; }
+  .pc-mini-front .pc-logo { width: 18px; height: 18px; }
+  .pc-mini-front b { width: 100%; }
+  .storage-pc-row .drive-grid { grid-template-columns: minmax(0,1fr); }
+  .storage-pc-row .storage-front,.storage-pc-row .storage-back { padding: 12px; }
+  .storage-pc-row .drive-panel-heading { flex-wrap: wrap; gap: 4px; }
+  .service-card .pc-remote-actions .open-button { font-size: 9px; padding: 6px 3px; overflow-wrap: anywhere; }
+}

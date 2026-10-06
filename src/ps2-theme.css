@@ -1896,3 +1896,68 @@ html { scrollbar-width: thin; scrollbar-color: #2d6fa8 #07111e; }
 .health-title { position: relative; }
 .node-alias { position: absolute; right: 0; bottom: 14px; color: #9fc2ff; opacity: .13; font: 700 30px/1 var(--font-geist-sans), sans-serif; font-style: normal; letter-spacing: -.02em; pointer-events: none; user-select: none; }
 @media (max-width: 430px) { .node-alias { font-size: 22px; } }
+
+/* Mobile comparison: retain the PS2 palette without moving shapes or glass blur. */
+@keyframes mobile-content-fade { from { opacity: 0; } to { opacity: 1; } }
+.destination-text { display: inline-block; white-space: nowrap; }
+@keyframes service-link-scroll {
+  0%, 20% { transform: translateX(0); }
+  80%, 100% { transform: translateX(var(--link-travel)); }
+}
+@media (max-width: 760px) {
+  .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .service-card { min-width: 0; min-height: 255px; padding: 12px; gap: 14px; border-radius: 14px; }
+  .service-card .card-top { gap: 5px; align-items: center; flex-wrap: wrap; }
+  .service-card .service-icon { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; }
+  .service-card .service-icon img { max-width: 24px; max-height: 24px; }
+  .service-card .access { font-size: 7px; letter-spacing: .02em; }
+  .service-card .access i { margin-right: 3px; }
+  .service-card .card-copy { min-width: 0; }
+  .service-card h2 { font-size: clamp(15px, 4vw, 20px); line-height: 1.2; overflow-wrap: anywhere; }
+  .service-card p { font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+  .service-card .group-label { font-size: 7px; }
+  .service-card .card-bottom { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: auto; }
+  .service-card .destination { display: block; width: 100%; font-size: 9px; }
+  .service-card .host-label { font-size: 7px; line-height: 1.5; overflow-wrap: anywhere; }
+  .service-card .host-label b { display: block; }
+  .service-card .open-button { width: 100%; min-width: 0; min-height: 44px; }
+  .destination-overflow { text-overflow: clip; }
+  .destination-overflow .destination-text { animation: service-link-scroll var(--link-duration) linear infinite alternate; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .destination-overflow .destination-text { animation: none; }
+}
+@media (max-width: 760px), (pointer: coarse) {
+  .ps-shapes, .gateway-shapes, .about-shapes { transform: none !important; }
+  .ps-shapes > span, .gateway-shapes > span, .about-shapes > span {
+    animation: none !important;
+    translate: none !important;
+    transition: none !important;
+  }
+  .connection-panel, .service-card, .health-card, .about-back {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: #081325;
+  }
+  .max-overlay {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: rgba(2, 7, 15, .9);
+  }
+  main, main.offline-world, .site-entered .shell, .site-entered .hero-line,
+  .gateway-content, .about-page {
+    animation: mobile-content-fade 220ms ease-out both;
+  }
+  [data-lift="pending"] { opacity: 1; }
+  .service-card, .mode-switching .service-card {
+    animation: none !important;
+    transition: transform 140ms ease-out, border-color 140ms ease-out;
+  }
+  .service-card:hover, .service-card.disabled:hover { transform: none; }
+  .service-card:active, .service-card.disabled:active { transform: translateY(-3px); }
+  .service-card:hover .service-icon { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  main, main.offline-world, .site-entered .shell, .site-entered .hero-line,
+  .gateway-content, .about-page { animation: none; }
+}

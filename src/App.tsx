@@ -4,6 +4,7 @@ import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import MaxLauncher, { type CoreState } from './max/MaxLauncher';
 import TemperatureGraph from './TemperatureGraph';
+import { usePcStatus, PcLight, PcMini, PcRemote, OverdriveCard } from './PcCards';
 import { functionsUrl, maxTelemetryFrom, services, useNodeStatus, type NodeName } from './status';
 
 type ConnectionMode = 'lan' | 'remote';
@@ -42,6 +43,23 @@ function countUp(el: Element, delay: number, duration: number) {
 }
 
 const displayUrl = (url: string | null) => url ? url.replace(/^https?:\/\//, '').replace(/\/$/, '') : 'Remote link not configured';
+function ServiceDestination({ text, title }: { text: string; title?: string }) {
+  const viewport = useRef<HTMLSpanElement>(null);
+  const content = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(0);
+  useEffect(() => {
+    const measure = () => setOverflow(Math.max(0, (content.current?.scrollWidth ?? 0) - (viewport.current?.clientWidth ?? 0)));
+    const observer = new ResizeObserver(measure);
+    if (viewport.current) observer.observe(viewport.current);
+    if (content.current) observer.observe(content.current);
+    measure();
+    return () => observer.disconnect();
+  }, [text]);
+  return <span ref={viewport} className={`destination ${overflow > 1 ? 'destination-overflow' : ''}`} title={title}
+    style={{ '--link-travel': `${-overflow}px`, '--link-duration': `${Math.max(8, overflow / 18 + 4)}s` } as CSSProperties}>
+    <span ref={content} className="destination-text">{text}</span>
+  </span>;
+}
 const formatMetric = (value: number | null | undefined, suffix = '%') => value == null ? '—' : `${Math.round(value)}${suffix}`;
 const formatBytes = (value: number | null | undefined) => {
   if (value == null || !Number.isFinite(value)) return '—';
@@ -59,6 +77,7 @@ const formatUptime = (seconds: number | null | undefined) => {
 };
 
 export default function Home() {
+  const pcControl = usePcStatus();
   const [mode, setMode] = useState<ConnectionMode>('remote');
   const { health, statusLive } = useNodeStatus();
   const [maxState, setMaxState] = useState<CoreState>('checking');
@@ -160,6 +179,31 @@ export default function Home() {
   useEffect(() => {
     if (!gatewayOpen || !('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const cards = [...document.querySelectorAll<HTMLElement>('.node-statuses .status, .connection-panel, .service-card, .max-teaser-card, .health-card, .drive-item')];
+    // Mobile: reveal immediately, without scroll gates, queued delays or count-up work.
+    if (window.matchMedia('(max-width: 760px), (pointer: coarse)').matches) {
+      const animations = cards.map(card => card.animate([{ opacity: 0 }, { opacity: 1 }],
+        { duration: 220, easing: 'ease-out' }));
+      // Keep the original storage flourish, without delaying the service cards.
+      const storage = document.querySelector('.health-drive-panel');
+      const storageObserver = new IntersectionObserver(entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return;
+        storageObserver.disconnect();
+        storage?.querySelectorAll<HTMLElement>('.drive-item').forEach((card, index) => {
+          const delay = index * 90;
+          animations.push(card.animate([
+            { opacity: 0, translate: '0 22px', scale: '.97' },
+            { opacity: 1, translate: '0 -12px', scale: '1.02', offset: .55 },
+            { opacity: 1, translate: '0 2px', scale: '1', offset: .8 },
+            { opacity: 1, translate: '0 0', scale: '1' },
+          ], { delay, duration: 760, easing: 'cubic-bezier(.25,.75,.3,1)', fill: 'backwards' }));
+          card.querySelectorAll('.drive-capacity b').forEach(value => countUp(value, delay + 300, 1100));
+          card.querySelectorAll<HTMLElement>('.drive-bar span').forEach(bar => animations.push(bar.animate(
+            [{ width: '0%', offset: 0 }], { delay: delay + 300, duration: 1100, easing: 'ease-out', fill: 'backwards' })));
+        });
+      }, { threshold: .15 });
+      if (storage) storageObserver.observe(storage);
+      return () => { storageObserver.disconnect(); animations.forEach(animation => animation.cancel()); };
+    }
     let nextSlot = performance.now() + 350; // let the page's own reveal get going first
     const lift = (card: HTMLElement) => {
       const now = performance.now();
@@ -317,6 +361,10 @@ export default function Home() {
     if (nextMode === mode) return;
     playSound('toggle');
     setMode(nextMode);
+    if (window.matchMedia('(max-width: 760px), (pointer: coarse)').matches) {
+      setModeAnimating(false);
+      return;
+    }
     setModeAnimating(true);
     if (modeAnimationTimer.current !== null) window.clearTimeout(modeAnimationTimer.current);
     modeAnimationTimer.current = window.setTimeout(() => {
@@ -389,6 +437,7 @@ export default function Home() {
   };
 
   const moveShapes = (event: ReactPointerEvent<HTMLElement>) => {
+    if (window.matchMedia('(max-width: 760px), (pointer: coarse)').matches) return;
     const x = (event.clientX / window.innerWidth - .5) * 34;
     const y = (event.clientY / window.innerHeight - .5) * 28;
     event.currentTarget.style.setProperty('--cursor-x', `${x}px`);
@@ -408,6 +457,7 @@ export default function Home() {
   };
 
   const moveGatewayShapes = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (window.matchMedia('(max-width: 760px), (pointer: coarse)').matches) return;
     const container = event.currentTarget;
     const pointerX = event.clientX;
     const pointerY = event.clientY;
@@ -582,12 +632,16 @@ export default function Home() {
           const target = service[mode]; const unavailable = !service.installed || !target; const node = health?.nodes[service.host]; const serviceOnline = node?.services?.[key];
           const liveState = !health ? 'checking' : !node?.online || serviceOnline === false ? 'offline' : serviceOnline ? 'online' : 'checking';
           const badge = !service.installed ? 'Coming soon' : liveState === 'online' ? 'Online' : liveState === 'offline' ? 'Offline' : 'Checking';
-          return <article className={`service-card ${service.tone} ${unavailable ? 'disabled' : ''}`} key={key} style={{ '--delay': `${index * 65}ms` } as CSSProperties} onMouseEnter={() => playSound('hover')} onClick={() => playSound('click')}>
+          return <article className={`service-card ${service.tone} ${unavailable ? 'disabled' : ''}`} key={key} style={{ '--delay': `${index * 65}ms` } as CSSProperties} onPointerEnter={event => { if (event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) playSound('hover'); }} onClick={event => {
+            const openButton = (event.target as Element).closest('.open-button');
+            const phone = window.matchMedia('(max-width: 760px), (pointer: coarse)').matches;
+            playSound(phone && !openButton ? 'hover' : 'click');
+          }}>
             <div className="card-top"><span className="service-icon" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}${service.logo}`} alt="" /></span><span className={`access ${liveState}`}><i />{badge}</span></div>
             <div className="card-copy"><span className="group-label">{service.group}</span><h2>{service.name}</h2><p>{service.description}</p></div>
-            <div className="card-bottom"><div className="destination-block"><span className="destination" title={target ?? undefined}>{!service.installed ? 'Not installed' : displayUrl(target)}</span><span className="host-label">Running on <b>{service.host}</b></span></div>{unavailable ? <button className="open-button" type="button" disabled><span>{!service.installed ? 'Coming soon' : 'Unavailable'}</span></button> : <a className="open-button" href={target!} rel="noreferrer" referrerPolicy="no-referrer" onPointerMove={moveButtonGlow} onPointerLeave={resetButtonGlow} aria-label={`Open ${service.name} using ${mode === 'lan' ? 'LAN' : 'Remote'}`}><span>Open</span><b>↗</b></a>}</div>
+            <div className="card-bottom"><div className="destination-block"><ServiceDestination title={target ?? undefined} text={!service.installed ? 'Not installed' : displayUrl(target)} /><span className="host-label">Running on <b>{service.host}</b></span></div>{unavailable ? <button className="open-button" type="button" disabled><span>{!service.installed ? 'Coming soon' : 'Unavailable'}</span></button> : <a className="open-button" href={target!} rel="noreferrer" referrerPolicy="no-referrer" onPointerMove={moveButtonGlow} onPointerLeave={resetButtonGlow} aria-label={`Open ${service.name} using ${mode === 'lan' ? 'LAN' : 'Remote'}`}><span>Open</span><b>↗</b></a>}</div>
           </article>
-        })}</div>
+        })}<OverdriveCard /><PcRemote control={pcControl} /></div>
       </section>
 
       <section className="health" aria-label="System health">
@@ -607,6 +661,7 @@ export default function Home() {
             </div>
           </article>;
         })}</div>
+        <div className="storage-pc-row">
         <section className={`drive-panel health-drive-panel storage-flip-card ${storagePinned ? 'storage-held' : ''}`} tabIndex={0}
           onClick={event => { if (!(event.target as Element).closest('select, option')) setStoragePinned(value => !value); }}
           onKeyDown={event => { if (event.target !== event.currentTarget || event.repeat) return; if (event.key === 'Escape') setStoragePinned(false); if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); setStoragePinned(value => !value); } }}
@@ -631,6 +686,8 @@ export default function Home() {
           <div className="storage-back" aria-hidden={!storagePinned} inert={!storagePinned}><TemperatureGraph initialMetric="disk" active={storagePinned} selectable storageOnly /><span>DATA / ARCHIVES / MEDIA</span></div>
           </div>
         </section>
+        <PcMini control={pcControl} />
+        </div>
       </section>
 
       <MaxLauncher telemetry={maxTelemetry} enabled={gatewayOpen && !aboutOpen} onSound={playSound} onCoreStateChange={setMaxState} />
@@ -639,7 +696,7 @@ export default function Home() {
         <button className="kinetic-word" type="button" onClick={openAbout} aria-label="Open the secret NILAVUS about page">NILAVUS<sup>®</sup></button>
       </section>
 
-      <div className="node-statuses footer-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}<div className={`status ${maxState}`}><span />M.A.X. {maxState}</div></div>
+      <div className="node-statuses footer-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}<div className={`status ${maxState}`}><span />M.A.X. {maxState}</div><PcLight control={pcControl} /></div>
       <footer><span>Made by MoeLustHer</span><span>Nilavu Systems</span><span>Secured with Tailscale</span><span>{visitorCount == null ? 'Visitors today —' : `${visitorCount} visitor${visitorCount === 1 ? '' : 's'} today`}</span></footer>
     </section>
   </main>;
