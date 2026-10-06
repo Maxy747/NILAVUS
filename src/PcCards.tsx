@@ -39,10 +39,10 @@ export function usePcStatus() {
 export type PcControl = ReturnType<typeof usePcStatus>;
 const label = (pc: PcStatus | null) => pc === null ? 'UNKNOWN' : pc.up ? 'AWAKE' : 'ASLEEP';
 function PcLogo() {
-  return <svg className="pc-logo" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="4" width="26" height="18" rx="3" /><path d="M11 28h10M16 22v6M8 10h7l-4 4h9" /></svg>;
+  return <svg className="pc-logo" width="24" height="24" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="5" width="24" height="17" rx="2.5" /><path d="M11 27h10M16 22v5" /></svg>;
 }
 function OverdriveLogo() {
-  return <svg className="pc-logo" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 25V7l8 9 5-9 5 9 8-9v18" /><path d="m18 3-6 15h7l-5 11" stroke="#d9b4ff" /></svg>;
+  return <img className="overdrive-logo" src={`${import.meta.env.BASE_URL}logos/maximum-overdrive.png`} alt="" width="40" height="40" />;
 }
 export function PcLight({ control }: { control: PcControl }) {
   return <div className={`status ${control.pc === null ? 'checking' : control.pc.up ? 'online' : 'offline'}`}><span />Max-PC {label(control.pc)}</div>;
