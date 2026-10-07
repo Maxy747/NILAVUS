@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { controlService, fetchDaily, fetchPc, fetchServices, wakePc, type AppKey, fetchDocker, startDockerWorkers, fetchHealth, fetchHistory, MAX_URL, streamChat, type DockerStatus, type PcStatus, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
+import { controlService, fetchDaily, fetchPc, fetchServices, wakePc, type AppKey, fetchDocker, startDockerWorkers, fetchHealth, fetchHistory, MAX_URL, streamChat, type DockerStatus, type PcStatus, pcNoSignal, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
 import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, nodesReporting, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
 import './max.css';
 import TemperatureGraph, { type Metric } from '../TemperatureGraph';
@@ -288,6 +288,10 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
         const pc = await fetchPc(signal);
         setPcStatus(pc);
         if (pc.up) { update(replyId, { text: 'Your PC is already on.', rows: [['PC', 'AWAKE']], pending: false }); return; }
+        if (pcNoSignal(pc)) {
+          update(replyId, { text: "Dosimeter can't reach the home network right now (its Wi-Fi is struggling), so I can't see or wake the PC. Try again in a minute.", rows: [['PC', 'NO SIGNAL']], pending: false });
+          return;
+        }
         if (!pc.canWake) {
           update(replyId, { text: 'Your PC is asleep or off. Only you, connected through Tailscale with the owner account, can wake it.', rows: [['PC', 'ASLEEP / OFF']], pending: false });
           return;
@@ -541,9 +545,10 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
                   return [<dt key={`${service.key}-n`}>{service.name.toUpperCase()}</dt>,
                     <dd key={`${service.key}-v`} className={up ? 'ok' : 'bad'}>{up ? 'ONLINE' : 'OFFLINE'}</dd>];
                 })}
-                  <dt>PC</dt><dd className={pcStatus == null ? 'dim' : pcStatus.up ? 'ok' : 'bad'}>
-                    {pcStatus == null ? 'UNKNOWN' : pcStatus.up ? 'AWAKE' : 'ASLEEP / OFF'}
-                    {pcStatus && !pcStatus.up && pcStatus.canWake && <button type="button" className="max-inline max-wake" disabled={busy}
+                  <dt>PC</dt><dd className={pcStatus == null || pcNoSignal(pcStatus) ? 'dim' : pcStatus.up ? 'ok' : 'bad'}
+                    title={pcNoSignal(pcStatus) ? "Dosimeter can't reach its own router, so the PC's state is unknown" : undefined}>
+                    {pcStatus == null ? 'UNKNOWN' : pcStatus.up ? 'AWAKE' : pcNoSignal(pcStatus) ? 'NO SIGNAL' : 'ASLEEP / OFF'}
+                    {pcStatus && !pcStatus.up && !pcNoSignal(pcStatus) && pcStatus.canWake && <button type="button" className="max-inline max-wake" disabled={busy}
                       onClick={() => void send({ text: 'wake my pc', label: '[ WAKE PC ]' })}>WAKE</button>}</dd>
                   <dt>PC DOCKER</dt><dd className={!docker?.reachable ? 'dim' : docker.engine ? 'up' : 'down'} title="PC Immich worker bridge; refreshes every 15 seconds">{!docker ? 'UNKNOWN' : !docker.reachable ? 'UNREACHABLE' : docker.starting ? 'STARTING' : docker.engine === null ? 'UNKNOWN' : docker.engine ? `${docker.workers.filter(w => w.state === 'running').length}/2 RUNNING` : 'STOPPED'}</dd>
                 </dl>

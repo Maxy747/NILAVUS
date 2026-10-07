@@ -975,7 +975,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"reports": max_daily.reports()})
         if self.route == "/pc":
             # Is the desktop PC awake? Harmless to show; waking is offered to the owner only.
-            return self._json(200, {"up": max_wake.is_up(), "canWake": self.owner()})
+            return self._json(200, {**max_wake.status(), "canWake": self.owner()})
         if self.route == "/services":
             # Status is harmless to show; control is only offered to the owner.
             return self._json(200, {**max_services.status(), "canControl": self.owner()})

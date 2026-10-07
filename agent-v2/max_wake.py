@@ -9,6 +9,7 @@ import os
 import socket
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 PC_MAC = os.environ.get("MAX_PC_MAC", "10:FF:E0:0F:C4:E2")
 PC_LAN_IP = os.environ.get("MAX_PC_IP", "192.168.1.85")
@@ -30,17 +31,41 @@ def magic_packet(mac):
 PROBE_PORTS = (445, 135, 3389, 47989)
 
 
+GATEWAY = os.environ.get("MAX_GATEWAY_IP", "192.168.1.1")
+GATEWAY_PORTS = (80, 53, 443)  # the router's web page / DNS: answers whenever the LAN works
+
+
+def _answers_on(host, port, timeout):
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except ConnectionRefusedError:
+        return True  # the machine is there; nothing listens on that port
+    except OSError:
+        return False  # no answer
+
+
+def _answers(host, ports, timeout):
+    """True if the host accepts or refuses a connection on any port (i.e. it's there).
+    All ports are tried at once, so a silent host costs one timeout, not one per port."""
+    with ThreadPoolExecutor(max_workers=len(ports)) as pool:
+        return any(pool.map(lambda port: _answers_on(host, port, timeout), ports))
+
+
 def is_up(timeout=1.0):
-    """True if the PC answers on the LAN at all (accepts or refuses a connection)."""
-    for port in PROBE_PORTS:
-        try:
-            with socket.create_connection((PC_LAN_IP, port), timeout=timeout):
-                return True
-        except ConnectionRefusedError:
-            return True  # the machine is there; nothing listens on that port
-        except OSError:
-            continue  # no answer (asleep/off, or a firewall dropping it): try the next port
-    return False
+    """True if the PC answers on the LAN at all. Two rounds, so one dropped packet doesn't flip it."""
+    return _answers(PC_LAN_IP, PROBE_PORTS, timeout) or _answers(PC_LAN_IP, PROBE_PORTS[:2], timeout * 2)
+
+
+def lan_ok(timeout=1.0):
+    """Can Dosimeter reach the router at all? If not, a silent PC says nothing about the PC."""
+    return _answers(GATEWAY, GATEWAY_PORTS, timeout)
+
+
+def status():
+    """{"up": bool, "lanOk": bool}: "not up" only means asleep/off when Dosimeter's own LAN works."""
+    up = is_up()
+    return {"up": up, "lanOk": True if up else lan_ok()}
 
 
 def wake():

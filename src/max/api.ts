@@ -38,7 +38,9 @@ export async function fetchDaily(signal?: AbortSignal): Promise<DailyReport[]> {
 }
 
 // The desktop PC: is it awake, and can this visitor wake it (the Tailscale owner only)?
-export type PcStatus = { up: boolean; canWake: boolean };
+// lanOk false: Dosimeter can't reach its own router, so a silent PC tells us nothing (not "asleep").
+export type PcStatus = { up: boolean; canWake: boolean; lanOk?: boolean };
+export const pcNoSignal = (pc: PcStatus | null) => !!pc && !pc.up && pc.lanOk === false;
 
 export async function fetchPc(signal?: AbortSignal): Promise<PcStatus> {
   const response = await fetch(`${MAX_URL}/pc`, { cache: 'no-store', signal });

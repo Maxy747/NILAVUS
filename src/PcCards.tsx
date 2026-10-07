@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchPc, wakePc, type PcStatus } from './max/api';
+import { fetchPc, pcNoSignal, wakePc, type PcStatus } from './max/api';
 import './pc-cards.css';
 
 export function usePcStatus() {
@@ -37,7 +37,7 @@ export function usePcStatus() {
   return { pc, message, waking: !!until, wake };
 }
 export type PcControl = ReturnType<typeof usePcStatus>;
-const label = (pc: PcStatus | null) => pc === null ? 'UNKNOWN' : pc.up ? 'AWAKE' : 'ASLEEP';
+const label = (pc: PcStatus | null) => pc === null ? 'UNKNOWN' : pc.up ? 'AWAKE' : pcNoSignal(pc) ? 'NO SIGNAL' : 'ASLEEP';
 function PcLogo() {
   return <svg className="pc-logo" width="24" height="24" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="5" width="24" height="17" rx="2.5" /><path d="M11 27h10M16 22v5" /></svg>;
 }
@@ -45,10 +45,10 @@ function OverdriveLogo() {
   return <img className="overdrive-logo" src={`${import.meta.env.BASE_URL}logos/maximum-overdrive.png`} alt="" width="40" height="40" />;
 }
 export function PcLight({ control }: { control: PcControl }) {
-  return <div className={`status ${control.pc === null ? 'checking' : control.pc.up ? 'online' : 'offline'}`}><span />Max-PC {label(control.pc)}</div>;
+  return <div className={`status ${control.pc === null || pcNoSignal(control.pc) ? 'checking' : control.pc.up ? 'online' : 'offline'}`}><span />Max-PC {label(control.pc)}</div>;
 }
 function Wake({ control }: { control: PcControl }) {
-  return <>{control.pc?.canWake && !control.pc.up && <button className="open-button" disabled={control.waking} onClick={() => void control.wake()}>{control.waking ? 'Waking…' : 'Wake PC'}</button>}
+  return <>{control.pc?.canWake && !control.pc.up && !pcNoSignal(control.pc) && <button className="open-button" disabled={control.waking} onClick={() => void control.wake()}>{control.waking ? 'Waking…' : 'Wake PC'}</button>}
     <small className="pc-message" role="status">{control.message}</small></>;
 }
 export function PcMini({ control }: { control: PcControl }) {
