@@ -1961,3 +1961,11 @@ html { scrollbar-width: thin; scrollbar-color: #2d6fa8 #07111e; }
   main, main.offline-world, .site-entered .shell, .site-entered .hero-line,
   .gateway-content, .about-page { animation: none; }
 }
+
+/* Phones: the header statuses wrap into lines of different lengths. Stack them as one block on
+   the right with the lines left-aligned inside it, so the status dots line up in a column. */
+@media (max-width: 430px) {
+  .header-node-statuses { display: grid; justify-content: end; justify-items: start; gap: 6px; }
+  /* Footer: a centred 2x2 grid instead of two separately centred rows, so the columns line up. */
+  .footer-node-statuses { display: grid; grid-template-columns: repeat(2, auto); justify-content: center; justify-items: start; gap: 8px 22px; }
+}
