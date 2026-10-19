@@ -16,7 +16,7 @@ HISTORY_URL = os.environ.get("MAX_HISTORY_URL", "https://gibzoyvvmwvprkubfhvc.su
 TIMEZONE = ZoneInfo(os.environ.get("MAX_TIMEZONE", "Asia/Kolkata"))
 NODES = ("nilavus", "nilavus-storage")
 TEMP_WARN = 75                 # matches max_core / telemetry.ts
-GAP_SECONDS = 180              # a gap over 3 minutes means no readings (same rule as the graphs)
+GAP_SECONDS = 720              # readings every 5 min: a gap over 12 minutes means no readings (same rule as the graphs)
 QUIET_WORTH_MENTIONING = 15 * 60
 KEEP_DAYS = 60
 

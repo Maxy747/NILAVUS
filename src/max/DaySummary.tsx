@@ -5,7 +5,7 @@ import { readHistory, type History, type Sample } from '../TemperatureGraph';
 import { TEMP_WARN } from './telemetry';
 
 const DAY_MS = 86_400_000;
-const GAP_MS = 180_000; // same rule as the graphs: a gap over 3 minutes means no readings
+const GAP_MS = 720_000; // same rule as the graphs: readings every 5 min, a gap over 12 min means no readings
 const QUIET_WORTH_MENTIONING_MS = 15 * 60_000;
 const NODES = ['nilavus', 'nilavus-storage'] as const;
 

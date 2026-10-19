@@ -27,6 +27,11 @@ export const services = {
   omv: { group: 'Administration', name: 'OpenMediaVault', description: 'NAS Management', logo: 'logos/openmediavault.svg', tone: 'omv', host: 'nilavus-storage' as NodeName, lan: 'http://192.168.1.81', remote: null, installed: true },
 } as const;
 
+/** Machines send a heartbeat every 5 minutes; silent for longer than this means offline. */
+export const OFFLINE_AFTER_MS = 12 * 60_000;
+/** How often the dashboard asks for status (only while the tab is visible). */
+export const POLL_MS = 60_000;
+
 export const normalizeHealth = (payload: HealthPayload): HealthPayload => {
   const rawNodes = payload.nodes ?? {};
   const nodes: Record<string, NodeMetrics | undefined> = { ...rawNodes };
@@ -35,9 +40,9 @@ export const normalizeHealth = (payload: HealthPayload): HealthPayload => {
     const embeddedDrives = node.services?._drives;
     if (!node.drives && Array.isArray(embeddedDrives)) nodes[name] = { ...node, drives: embeddedDrives };
     const receivedAt = Date.parse(String(node.receivedAt ?? ''));
-    // The Edge Function uses a 90-second cutoff. Allow a short additional
-    // window for delayed heartbeats so a healthy host does not flicker red.
-    if (!node.online && Number.isFinite(receivedAt) && Date.now() - receivedAt < 150_000) {
+    // Heartbeats arrive every 5 minutes; the status function calls a node offline after 12
+    // (two missed beats plus slack). Use the same rule here, so a healthy host doesn't flicker red.
+    if (!node.online && Number.isFinite(receivedAt) && Date.now() - receivedAt < OFFLINE_AFTER_MS) {
       nodes[name] = { ...node, online: true };
     }
   }
@@ -50,7 +55,8 @@ export const normalizeHealth = (payload: HealthPayload): HealthPayload => {
   return { ...payload, nodes: { ...nodes, nilavus: laptop ?? nodes.nilavus } };
 };
 
-/** Polls the status endpoint every 10 s. Goes offline only after 3 failures in a row. */
+/** Polls the status endpoint every 60 s while the tab is visible (and at once when it becomes
+ * visible again). Goes offline only after 3 failures in a row. */
 export function useNodeStatus() {
   const [health, setHealth] = useState<HealthPayload | null>(null);
   const [statusLive, setStatusLive] = useState(false);
@@ -58,6 +64,7 @@ export function useNodeStatus() {
   useEffect(() => {
     let active = true;
     const refresh = async () => {
+      if (document.hidden) return;
       try {
         const response = await fetch(`${functionsUrl}/status`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Health endpoint unavailable');
@@ -71,8 +78,10 @@ export function useNodeStatus() {
       }
     };
     void refresh();
-    const timer = window.setInterval(refresh, 10_000);
-    return () => { active = false; window.clearInterval(timer); };
+    const timer = window.setInterval(refresh, POLL_MS);
+    const onVisible = () => { if (!document.hidden) void refresh(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
   return { health, statusLive };
 }

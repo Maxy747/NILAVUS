@@ -23,7 +23,7 @@ export function usePcStatus() {
       finally { busy = false; }
     };
     void refresh();
-    const timer = window.setInterval(refresh, until ? 5000 : 15000);
+    const timer = window.setInterval(refresh, until ? 5000 : 60000); // fast only while waking the PC
     document.addEventListener('visibilitychange', refresh);
     return () => { disposed = true; clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
   }, [until]);

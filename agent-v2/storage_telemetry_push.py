@@ -13,7 +13,7 @@ import urllib.error
 METRICS_URL = os.environ.get("NILAVU_LOCAL_METRICS_URL", "http://127.0.0.1:8765/api/node")
 HEARTBEAT_URL = os.environ.get("NILAVU_HEARTBEAT_URL", "")
 SECRET = os.environ.get("NILAVU_TELEMETRY_SECRET", "")
-INTERVAL_SECONDS = max(10, int(os.environ.get("NILAVU_TELEMETRY_INTERVAL", "30")))
+INTERVAL_SECONDS = max(10, int(os.environ.get("NILAVU_TELEMETRY_INTERVAL", "300")))  # one heartbeat every 5 minutes
 RETRY_SECONDS = max(5, int(os.environ.get("NILAVU_TELEMETRY_RETRY", "10")))
 
 DRIVES = (

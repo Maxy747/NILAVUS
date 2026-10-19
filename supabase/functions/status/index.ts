@@ -15,7 +15,8 @@ Deno.serve(async (request) => {
   for (const row of rows) {
     const receivedAt = Date.parse(String(row.received_at));
     nodes[String(row.node_name)] = {
-      online: Number.isFinite(receivedAt) && now - receivedAt < 90_000,
+      // Heartbeats every 5 minutes: offline only after 12 silent minutes (two missed beats plus slack).
+      online: Number.isFinite(receivedAt) && now - receivedAt < 12 * 60_000,
       temperatureC: row.temperature_c,
       cpuPercent: row.cpu_percent,
       memoryPercent: row.memory_percent,

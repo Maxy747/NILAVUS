@@ -645,7 +645,7 @@ export default function Home() {
       </section>
 
       <section className="health" aria-label="System health">
-        <div className="section-heading"><span>System health</span><b>Refreshes every 10 seconds</b></div>
+        <div className="section-heading"><span>System health</span><b>Updates every 5 minutes</b></div>
         <div className="health-grid">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => {
           const node = health?.nodes[nodeName];
           const state = node?.online ? 'online' : health ? 'offline' : 'checking';

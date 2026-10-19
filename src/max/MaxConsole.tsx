@@ -124,25 +124,25 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
   const [busy, setBusy] = useState(false);
   const [docker, setDocker] = useState<DockerStatus | null>(null);
   const [pcStatus, setPcStatus] = useState<PcStatus | null>(null);
-  useEffect(() => { // the desktop PC: awake or not, every 30 s while the console is open
+  useEffect(() => { // the desktop PC: awake or not, every 60 s while the console is open and visible
     const controller = new AbortController();
-    const refresh = () => fetchPc(AbortSignal.any([controller.signal, AbortSignal.timeout(8000)])).then(setPcStatus, () => undefined);
+    const refresh = () => document.hidden ? undefined : fetchPc(AbortSignal.any([controller.signal, AbortSignal.timeout(8000)])).then(setPcStatus, () => undefined);
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 30000);
+    const timer = window.setInterval(() => void refresh(), 60000);
     return () => { controller.abort(); window.clearInterval(timer); };
   }, []);
   useEffect(() => {
     const controller = new AbortController();
     let pending = false;
     const refresh = async () => {
-      if (pending) return;
+      if (pending || document.hidden) return;
       pending = true;
       try { setDocker(await fetchDocker(AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]))); }
       catch { if (!controller.signal.aborted) setDocker(null); }
       finally { pending = false; }
     };
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 15000);
+    const timer = window.setInterval(() => void refresh(), 60000);
     return () => { controller.abort(); window.clearInterval(timer); };
   }, []);
   const [booting, setBooting] = useState(() => { try { return !sessionStorage.getItem(BOOT_KEY) && !reducedMotion(); } catch { return false; } });
