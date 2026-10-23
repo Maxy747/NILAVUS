@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, 
 import { controlService, fetchDaily, fetchPc, fetchServices, wakePc, type AppKey, fetchDocker, startDockerWorkers, fetchHealth, fetchHistory, MAX_URL, streamChat, type DockerStatus, type PcStatus, pcNoSignal, type ChatTurn, type CoreHealth, type HistorySession, type QuickAction, type Row } from './api';
 import { alertKey, alerts as deriveAlerts, drives, greeting, NODE_LABEL, NODES, nodesReporting, pct, serviceUp, shortUptime, storageStatus, STORAGE_WARN, systemStatus, type MaxTelemetry } from './telemetry';
 import './max.css';
+import ShutdownControl from '../ShutdownControl';
 import TemperatureGraph, { type Metric } from '../TemperatureGraph';
 import { chatExpired } from './chatDay';
 
@@ -283,6 +284,14 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
     abortRef.current = controller;
     let streamed = '';
     try {
+      if (request.text && /\b(shut\s*down|turn off|power off)\b.{0,20}\b(pc|computer|desktop)\b/i.test(request.text)) {
+        const pc = await fetchPc(AbortSignal.timeout(8000));
+        setPcStatus(pc);
+        update(replyId, { pending: false, text: pc.canShutdown && pc.up
+          ? 'Use Shut down PC in my sidebar or the Max-PC card. Enter your password in the private confirmation dialog—not in chat. Save your work first.'
+          : 'Shutdown requires Max-PC to be awake, the configured owner on Tailscale, and enabled shutdown controls.' });
+        return;
+      }
       if (request.text && WAKE_REQUEST.test(request.text)) {
         const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]);
         const pc = await fetchPc(signal);
@@ -552,6 +561,7 @@ export default function MaxConsole({ telemetry, onClose }: { telemetry: MaxTelem
                       onClick={() => void send({ text: 'wake my pc', label: '[ WAKE PC ]' })}>WAKE</button>}</dd>
                   <dt>PC DOCKER</dt><dd className={!docker?.reachable ? 'dim' : docker.engine ? 'up' : 'down'} title="PC Immich worker bridge; refreshes every 15 seconds">{!docker ? 'UNKNOWN' : !docker.reachable ? 'UNREACHABLE' : docker.starting ? 'STARTING' : docker.engine === null ? 'UNKNOWN' : docker.engine ? `${docker.workers.filter(w => w.state === 'running').length}/2 RUNNING` : 'STOPPED'}</dd>
                 </dl>
+                {pcStatus?.up && pcStatus.canShutdown && <ShutdownControl />}
               </div>
               <div className="max-block">
                 <h3>STORAGE</h3>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchPc, pcNoSignal, wakePc, type PcStatus } from './max/api';
 import './pc-cards.css';
+import ShutdownControl from './ShutdownControl';
 
 export function usePcStatus() {
   const [pc, setPc] = useState<PcStatus | null>(null);
@@ -49,6 +50,7 @@ export function PcLight({ control }: { control: PcControl }) {
 }
 function Wake({ control }: { control: PcControl }) {
   return <>{control.pc?.canWake && !control.pc.up && !pcNoSignal(control.pc) && <button className="open-button" disabled={control.waking} onClick={() => void control.wake()}>{control.waking ? 'Waking…' : 'Wake PC'}</button>}
+    {control.pc?.up && control.pc.canShutdown && <ShutdownControl />}
     <small className="pc-message" role="status">{control.message}</small></>;
 }
 export function PcMini({ control }: { control: PcControl }) {

@@ -17,6 +17,16 @@ LOCK = threading.Lock()
 STARTING = False
 RESULT = None
 CONFIG = {}
+SHUTDOWN_PENDING = False
+
+def shutdown_pc():
+    # No /f and no positive /t (which implies force). Apps may veto to protect work.
+    global SHUTDOWN_PENDING
+    try:
+        subprocess.run([str(Path(__import__('os').environ['SystemRoot']) / 'System32' / 'shutdown.exe'), '/s', '/t', '0'],
+                       timeout=15, capture_output=True, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    finally:
+        SHUTDOWN_PENDING = False
 
 def docker(*args, timeout=12):
     return subprocess.run([CONFIG['docker'], *args], capture_output=True, text=True,
@@ -83,9 +93,18 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200, status())
 
     def do_POST(self):
-        global STARTING, RESULT
+        global STARTING, RESULT, SHUTDOWN_PENDING
         if not self.authorized():
             return self.reply(403, {'error': 'Forbidden'})
+        if self.path == '/shutdown':
+            with LOCK:
+                if SHUTDOWN_PENDING:
+                    return self.reply(409, {'error': 'Shutdown already requested'})
+                SHUTDOWN_PENDING = True
+            timer = threading.Timer(3, shutdown_pc)
+            timer.daemon = True
+            timer.start()
+            return self.reply(202, {'message': 'Shutdown requested. Windows may wait for unsaved work; power-off is not yet confirmed.'})
         if self.path != '/start':
             return self.reply(404, {'error': 'Not found'})
         if not LOCK.acquire(blocking=False):

@@ -975,7 +975,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"reports": max_daily.reports()})
         if self.route == "/pc":
             # Is the desktop PC awake? Harmless to show; waking is offered to the owner only.
-            return self._json(200, {**max_wake.status(), "canWake": self.owner()})
+            return self._json(200, {**max_wake.status(), "canWake": self.owner(), "canShutdown": self.owner() and max_docker.shutdown_ready()})
         if self.route == "/services":
             # Status is harmless to show; control is only offered to the owner.
             return self._json(200, {**max_services.status(), "canControl": self.owner()})
@@ -999,6 +999,23 @@ class Handler(BaseHTTPRequestHandler):
         self._json(404, {"error": "not found"})
 
     def do_POST(self):
+        if self.route == "/pc/shutdown":
+            if not self.owner():
+                return self._json(403, {"error": "Shutdown requires the owner connected through Tailscale."})
+            if self.headers.get("Origin") not in ALLOWED_ORIGINS or self.headers.get("Content-Type") != "application/json":
+                return self._json(403, {"error": "Untrusted request origin or content type."})
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 1 <= length <= 1024:
+                    return self._json(400, {"error": "Invalid request."})
+                body = json.loads(self.rfile.read(length))
+                if not isinstance(body, dict) or body.get('confirm') is not True:
+                    return self._json(400, {"error": "Explicit confirmation required."})
+                return self._json(202, max_docker.shutdown(body.get('password')))
+            except ValueError as error:
+                return self._json(400, {"error": str(error)})
+            except Exception:
+                return self._json(503, {"error": "PC bridge unavailable; shutdown could not be confirmed."})
         if self.route == "/pc/wake":
             # Wake-on-LAN for the desktop PC: owner only, trusted Origin, {"confirm": true}, 60 s cooldown.
             if not self.owner():

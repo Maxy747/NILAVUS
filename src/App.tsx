@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import MaxLauncher, { type CoreState } from './max/MaxLauncher';
+import PersonalCards from './PersonalCards';
 import TemperatureGraph from './TemperatureGraph';
 import { usePcStatus, PcLight, PcMini, PcRemote, OverdriveCard } from './PcCards';
 import { functionsUrl, maxTelemetryFrom, services, useNodeStatus, type NodeName } from './status';
@@ -641,7 +642,7 @@ export default function Home() {
             <div className="card-copy"><span className="group-label">{service.group}</span><h2>{service.name}</h2><p>{service.description}</p></div>
             <div className="card-bottom"><div className="destination-block"><ServiceDestination title={target ?? undefined} text={!service.installed ? 'Not installed' : displayUrl(target)} /><span className="host-label">Running on <b>{service.host}</b></span></div>{unavailable ? <button className="open-button" type="button" disabled><span>{!service.installed ? 'Coming soon' : 'Unavailable'}</span></button> : <a className="open-button" href={target!} rel="noreferrer" referrerPolicy="no-referrer" onPointerMove={moveButtonGlow} onPointerLeave={resetButtonGlow} aria-label={`Open ${service.name} using ${mode === 'lan' ? 'LAN' : 'Remote'}`}><span>Open</span><b>↗</b></a>}</div>
           </article>
-        })}<OverdriveCard /><PcRemote control={pcControl} /></div>
+        })}<OverdriveCard /><PcRemote control={pcControl} /><PersonalCards /></div>
       </section>
 
       <section className="health" aria-label="System health">

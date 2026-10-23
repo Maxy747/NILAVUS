@@ -1,4 +1,18 @@
 .pc-awake { border-color: #55e89680; box-shadow: 0 0 16px #55e89624; }
+.personal-reader { --accent: #69dca5; }
+.iphone-gallery { --accent: #82bfff; }
+.novel-card { --accent: #d0a0cf; }
+.personal-reader .card-bottom { grid-template-columns: minmax(0,1fr); gap: 12px; }
+.reader-toggle { display: flex; gap: 4px; }
+.reader-toggle button { flex: 1; min-width: 0; padding: 8px 3px; border: 1px solid #36506a; border-radius: 7px; color: #aec4d9; background: #0b192b; cursor: pointer; }
+.reader-toggle button[aria-pressed=true] { background: #164437; color: #afffe0; border-color: #69dca5; }
+.shutdown-dialog { width: min(430px, calc(100vw - 32px)); box-sizing: border-box; padding: 24px; border: 1px solid #536987; border-radius: 16px; color: #dce8f5; background: #0b1729; font: 14px/1.5 system-ui; }
+.shutdown-dialog::backdrop { background: #000b; }
+.shutdown-dialog input { display: block; box-sizing: border-box; width: 100%; padding: 12px; margin-top: 8px; color: white; background: #07101d; border: 1px solid #536987; border-radius: 7px; }
+.shutdown-dialog button { padding: 10px; color: #dce8f5; background: #25364d; border: 1px solid #536987; border-radius: 7px; cursor: pointer; }
+.pc-mini-back { overflow-x: hidden; }
+.pc-mini-back .open-button { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; font-size: 10px; padding: 8px 4px; }
+.pc-shutdown { border-color: #ba6979; font-size: 11px; }
 .pc-dim { opacity: .75; }
 .pc-remote .card-bottom { grid-template-columns: minmax(0,1fr); gap: 10px; }
 .pc-remote small,.pc-message,.pc-mini small { color: #91a5bc; font-size: 10px; line-height: 1.5; }

@@ -1,5 +1,7 @@
 """Authenticated fixed-operation PC bridge client, with short status caching."""
 import json
+import hashlib
+import hmac
 import threading
 import time
 import urllib.request
@@ -9,6 +11,26 @@ CONFIG_PATH = Path('/home/dosimeter/.config/nilavus-pc-bridge.json')
 LOCK = threading.Lock()
 CACHE = (0, None)
 LAST_START = 0
+LAST_SHUTDOWN_ATTEMPT = 0
+
+def shutdown_ready():
+    return bool(config().get('shutdownHash') and config().get('shutdownSalt'))
+
+def shutdown(password):
+    global LAST_SHUTDOWN_ATTEMPT
+    with LOCK:
+        if time.monotonic() - LAST_SHUTDOWN_ATTEMPT < 30:
+            raise ValueError('Wait 30 seconds before another shutdown attempt.')
+        LAST_SHUTDOWN_ATTEMPT = time.monotonic()
+        c = config()
+        if not shutdown_ready():
+            raise ValueError('Shutdown is not configured.')
+        if not isinstance(password, str) or not 1 <= len(password) <= 128:
+            raise ValueError('Invalid password.')
+        digest = hashlib.pbkdf2_hmac('sha256', password.encode(), bytes.fromhex(c['shutdownSalt']), 200000).hex()
+        if not hmac.compare_digest(digest, c['shutdownHash']):
+            raise ValueError('Invalid password.')
+        return call('/shutdown', True)
 
 def config():
     try:
