@@ -698,7 +698,7 @@ export default function Home() {
       </section>
 
       <div className="node-statuses footer-node-statuses" aria-label="Server availability">{(['nilavus', 'nilavus-storage'] as NodeName[]).map(nodeName => { const node = health?.nodes[nodeName]; const state = node?.online ? 'online' : health ? 'offline' : 'checking'; return <div className={`status ${state}`} key={nodeName}><span />{nodeName} {state}</div> })}<div className={`status ${maxState}`}><span />M.A.X. {maxState}</div><PcLight control={pcControl} /></div>
-      <footer><span>Made by MoeLustHer</span><span>Nilavu Systems</span><span>Secured with Tailscale</span><span>{visitorCount == null ? 'Visitors today —' : `${visitorCount} visitor${visitorCount === 1 ? '' : 's'} today`}</span></footer>
+      <footer><span>Made by MoeLustHer</span><a className="portfolio-link" href="https://maxy747.github.io/Portfolio/" target="_blank" rel="noreferrer">My portfolio ↗</a><span>Nilavu Systems</span><span>Secured with Tailscale</span><span>{visitorCount == null ? 'Visitors today —' : `${visitorCount} visitor${visitorCount === 1 ? '' : 's'} today`}</span></footer>
     </section>
   </main>;
 }
