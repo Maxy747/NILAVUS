@@ -1,14 +1,18 @@
 .pc-awake { border-color: #55e89680; box-shadow: 0 0 16px #55e89624; }
 .personal-reader { --accent: #69dca5; }
 .iphone-gallery { --accent: #82bfff; }
-.service-card.novel-card { --accent: #7442c8; background: #e4d9ee !important; border-color: #b9a4ca; color: #231d2b; }
+.service-card.novel-card { --accent: #b495d5; background: #211929 !important; border-color: #665176; color: #e8deed; }
 .novel-card .novel-cover { width: 58px; height: 87px; object-fit: cover; border-radius: 3px 7px 7px 3px; box-shadow: 3px 5px 12px #38234430; }
-.novel-card .card-copy h2 { font-family: Georgia, 'Times New Roman', serif; color: #231d2b; font-weight: 500; }
-.novel-card .card-copy p { font-family: Georgia, 'Times New Roman', serif; color: #55445f; }
-.novel-card .group-label,.novel-card .host-label,.novel-card .access { color: #665173; }
-.novel-card .open-button { background: #7442c8; border-color: #7442c8; color: #fff; box-shadow: none; }
-footer .portfolio-link { color: #8bceff; text-decoration: none; }
-footer .portfolio-link:hover, footer .portfolio-link:focus-visible { color: #dce8f5; text-decoration: underline; }
+.novel-card .card-copy h2 { font-family: Georgia, 'Times New Roman', serif; color: #e8deed; font-weight: 500; }
+.novel-card .card-copy p { font-family: Georgia, 'Times New Roman', serif; color: #c0afcd; }
+.novel-card .group-label,.novel-card .host-label,.novel-card .access { color: #baa5c8; }
+.novel-card .open-button { background: #59416e; border-color: #8c6aa5; color: #f2eaf7; box-shadow: none; }
+.about-content .portfolio-link { color: #8bceff; text-decoration: none; font-size: 16px; }
+.about-content .portfolio-link:hover, .about-content .portfolio-link:focus-visible { color: #dce8f5; text-decoration: underline; }
+.service-grid > .service-card:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: calc((100% - 15px) / 2); }
+@media (max-width: 760px) { .service-grid > .service-card:last-child:nth-child(odd) { width: calc((100% - 10px) / 2); } }
+.personal-reader .service-icon { display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; }
+.personal-reader .service-icon img { width: 100%; height: 100%; display: block; object-fit: contain; }
 .magnet-links { display: grid; gap: 8px; margin-top: 12px; }
 .magnet-links .open-button { min-width: 0; white-space: normal; font-size: 12px; padding: 8px; }
 .magnet-links small { color: #91a5bc; font-size: 10px; line-height: 1.5; }

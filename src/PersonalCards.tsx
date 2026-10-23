@@ -3,7 +3,7 @@ export default function PersonalCards() {
   const [selected, setSelected] = useState(false);
   return <>
     <article className="service-card personal-reader">
-      <div className="card-top"><span className="service-icon" aria-hidden="true">◉</span><span className="access">TAILSCALE ONLY</span></div>
+      <div className="card-top"><span className="service-icon" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}logos/whatsapp-reader.svg`} alt="" /></span><span className="access">TAILSCALE ONLY</span></div>
       <div className="card-copy"><span className="group-label">Chats</span><h2>WhatsApp Reader</h2><p>Browse your exported conversations</p></div>
       <div className="card-bottom"><div className="reader-toggle" role="group" aria-label="Chat reader version">
         <button aria-pressed={!selected} onClick={() => setSelected(false)}>General</button><button aria-pressed={selected} onClick={() => setSelected(true)}>Selected</button>
@@ -11,7 +11,7 @@ export default function PersonalCards() {
       <a className="open-button" href={`http://100.89.154.37:${selected ? 8879 : 8878}/`} target="_blank" rel="noreferrer">Open ↗</a></div>
     </article>
     <article className="service-card personal-reader iphone-gallery">
-      <div className="card-top"><span className="service-icon" aria-hidden="true">▧</span><span className="access">TAILSCALE ONLY</span></div>
+      <div className="card-top"><span className="service-icon" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}logos/iphone-gallery.svg`} alt="" /></span><span className="access">TAILSCALE ONLY</span></div>
       <div className="card-copy"><span className="group-label">Photos</span><h2>iPhone Gallery</h2><p>Browse your iPhone photo backup</p></div>
       <div className="card-bottom"><span className="host-label">Dosimeter · Gallery backup</span><a className="open-button" href="http://100.89.154.37:8877/" target="_blank" rel="noreferrer">Open ↗</a></div>
     </article>
