@@ -16,8 +16,8 @@ export default function PersonalCards() {
       <div className="card-bottom"><span className="host-label">Dosimeter · Gallery backup</span><a className="open-button" href="http://100.89.154.37:8877/" target="_blank" rel="noreferrer">Open ↗</a></div>
     </article>
     <article className="service-card personal-reader novel-card">
-      <div className="card-top"><span className="service-icon" aria-hidden="true">▤</span><span className="access">PUBLIC</span></div>
-      <div className="card-copy"><span className="group-label">Novel</span><h2>She's a Liar</h2><p>My novel · Read online</p></div>
+      <div className="card-top"><img className="novel-cover" src={`${import.meta.env.BASE_URL}logos/shes-a-liar-cover.webp`} alt="She's a Liar book cover" loading="lazy" /><span className="access">PUBLIC</span></div>
+      <div className="card-copy"><span className="group-label">A novel by Max</span><h2>She's a Liar</h2><p>A story of love, loyalty, and the lies we tell ourselves.</p></div>
       <div className="card-bottom"><span className="host-label">Available anywhere · No Tailscale needed</span><a className="open-button" href="https://maxy747.github.io/shes-a-liar-book/" target="_blank" rel="noreferrer">Read ↗</a></div>
     </article>
   </>;
